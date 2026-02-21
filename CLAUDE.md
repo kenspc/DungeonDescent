@@ -8,13 +8,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 dotnet build          # compile
 dotnet run            # build + run (requires terminal ≥ 62×27)
 dotnet run --no-build # run without rebuilding
+dotnet watch run      # rebuild + restart on file save (for development)
 ```
 
 No test project exists. Verification is done by building and running manually.
+The minimum terminal size check (62×27) in `Program.cs` line 9 can be temporarily
+lowered during development if running in a constrained environment.
 
 ## Architecture
 
-**Dungeon Descent** is a turn-based ASCII roguelike. All code is in the single `DungeonDescent` namespace with no third-party dependencies.
+**Dungeon Descent** is a turn-based ASCII roguelike. All code is in the single `DungeonDescent` namespace (no sub-namespaces) with no third-party dependencies. All files use implicit `using` — no `using DungeonDescent;` needed within the project.
 
 ### Turn flow
 
