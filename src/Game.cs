@@ -167,7 +167,11 @@ class Game
             Player.Score += target.ExpReward;
 
             if (target.Name == "Dragon")
-                Log.Add("The Dragon is dead! Find the stairs up to escape!");
+            {
+                Log.Add("The Dragon is dead! You have conquered the dungeon!");
+                Player.Score += Player.Gold * 2 + Player.Level * 50;
+                Status = GameStatus.Won;
+            }
         }
     }
 
