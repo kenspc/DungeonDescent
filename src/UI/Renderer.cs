@@ -129,7 +129,9 @@ static class Renderer
     {
         Console.Clear();
         Console.WriteLine($"{GameColors.Bold}{GameColors.Yellow}=== INVENTORY ==={GameColors.Reset}");
-        Console.WriteLine($"HP: {GameColors.Red}{game.Player.Hp}/{game.Player.MaxHp}{GameColors.Reset}  Carry: {game.Player.Inventory.Count}/{Player.MaxInventory}");
+        var p = game.Player;
+        string hpColor = p.Hp < p.MaxHp / 3 ? GameColors.Red : GameColors.Green;
+        Console.WriteLine($"HP: {hpColor}{p.Hp}/{p.MaxHp}{GameColors.Reset}  Carry: {p.Inventory.Count}/{Player.MaxInventory}");
         Console.WriteLine();
 
         var inv = game.Player.Inventory;
