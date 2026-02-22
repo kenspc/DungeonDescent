@@ -35,7 +35,7 @@ Picked up Leather Armor.
 
 ```bash
 git clone <repo>
-cd test-dotnet
+cd DungeonDescent
 dotnet run
 ```
 
@@ -167,9 +167,9 @@ Each floor is **procedurally generated** with random rooms and corridors.
 ## Project Structure
 
 ```
-test-dotnet/
+DungeonDescent/
 ├── Program.cs                 # Entry point, main game loop, inventory handler
-├── test-dotnet.csproj         # .NET 8 project file
+├── DungeonDescent.csproj      # .NET 8 project file
 ├── docs/
 │   └── plans/                 # Design and implementation documents
 └── src/

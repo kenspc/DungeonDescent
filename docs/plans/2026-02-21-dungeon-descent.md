@@ -13,7 +13,7 @@
 ### Task 1: Project Skeleton
 
 **Files:**
-- Modify: `test-dotnet.csproj`
+- Modify: `DungeonDescent.csproj`
 - Modify: `Program.cs`
 - Create: `src/Core/Point.cs`
 - Create: `src/Core/Direction.cs`
@@ -21,7 +21,7 @@
 
 **Step 1: Update csproj to allow unsafe code and set root namespace**
 
-Replace `test-dotnet.csproj` content:
+Replace `DungeonDescent.csproj` content:
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
@@ -94,7 +94,7 @@ Console.WriteLine("Dungeon Descent — skeleton OK");
 
 **Step 6: Build and verify**
 ```bash
-cd /home/kenspc/projects/test-dotnet
+cd /home/kenspc/projects/DungeonDescent
 dotnet build
 ```
 Expected: Build succeeded, 0 errors.
@@ -1261,7 +1261,7 @@ Expected: Build succeeded, 0 errors.
 
 **Step 1: Run the game**
 ```bash
-cd /home/kenspc/projects/test-dotnet
+cd /home/kenspc/projects/DungeonDescent
 dotnet run
 ```
 Expected: Game starts, shows dungeon map, title bar, status bar, and message log.
