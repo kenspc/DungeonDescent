@@ -1,5 +1,7 @@
 # Dungeon Descent
 
+**GitHub:** https://github.com/kenspc/DungeonDescent
+
 A turn-based ASCII roguelike dungeon crawler built with .NET 8 Console. No third-party libraries — pure `System.Console` with ANSI color rendering.
 
 ```
