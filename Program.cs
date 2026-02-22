@@ -77,7 +77,6 @@ static void HandleInventory(Game game)
             var msg = game.UseInventoryItem(index);
             game.Log.Add(msg);
             game.EndPlayerTurn();  // Using an item costs a turn
-            return;
         }
     }
 }
