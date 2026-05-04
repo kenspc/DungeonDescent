@@ -178,7 +178,9 @@
 
 ### Task 8: `RootScreen` + 4-surface 拆分
 
-**Status:** TODO
+**Status:** DONE
+
+**Implementation note:** SadConsoleRenderer's old monolithic `RenderAll(game, surface)` method is replaced by four `Render{Title,Map,Status,Log}` methods that each target a dedicated 0,0-origin surface. Map rendering no longer applies a `+1` Y-offset because the map surface itself is positioned at (0, 1). `GameSurface.cs` is deleted (was unused after Program.cs switched to RootScreen, and would have a stale RenderAll dependency). Visual portion (4 regions correctly placed, layout identical to Task 7, gameplay regression-free) DEFERRED — needs human visual verification.
 
 **Depends on:** Task 7
 

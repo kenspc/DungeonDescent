@@ -3,25 +3,26 @@ using SadRogue.Primitives;
 
 namespace DungeonDescent;
 
-// SadConsole-flavoured replacement for the legacy Renderer.cs. All entity
-// `Color` fields are still ANSI escape strings during M2-M4; AnsiToColor is
-// the bridge until M5 retypes them to SadRogue.Primitives.Color.
+// SadConsole-flavoured replacement for the legacy Renderer.cs. After
+// Task 8 the main game screen is split into four surfaces (title, map,
+// status, log) so each Render* method targets a single dedicated surface
+// whose origin is (0, 0). All entity `Color` fields are still ANSI escape
+// strings during M2-M4; AnsiToColor is the bridge until M5 retypes them
+// to SadRogue.Primitives.Color.
 static class SadConsoleRenderer
 {
-    private const int MapOffsetX = 0;
-    private const int MapOffsetY = 1; // row 0 = title bar
-
-    public static void RenderAll(Game game, IScreenSurface surface)
+    public static void RenderTitle(Game game, IScreenSurface surface)
     {
         surface.Surface.Clear();
-        DrawTitle(game, surface);
-        RenderMap(game, surface);
-        DrawStatusBar(game, surface);
-        DrawMessageLog(game, surface);
+        string title = $" Dungeon Descent - Floor {game.Floor}/5 ";
+        if (title.Length < Map.Width)
+            title = title.PadRight(Map.Width);
+        surface.Surface.Print(0, 0, title, Palette.Yellow);
     }
 
     public static void RenderMap(Game game, IScreenSurface surface)
     {
+        surface.Surface.Clear();
         var map    = game.Map;
         var player = game.Player;
 
@@ -31,19 +32,17 @@ static class SadConsoleRenderer
             {
                 var tile = map[x, y];
                 var p    = new Point(x, y);
-                int sx   = MapOffsetX + x;
-                int sy   = MapOffsetY + y;
 
                 if (!tile.IsExplored)
                 {
-                    surface.Surface.SetGlyph(sx, sy, ' ', Palette.White);
+                    surface.Surface.SetGlyph(x, y, ' ', Palette.White);
                     continue;
                 }
 
                 // Player
                 if (p == player.Position)
                 {
-                    surface.Surface.SetGlyph(sx, sy, player.Glyph, AnsiToColor(player.Color));
+                    surface.Surface.SetGlyph(x, y, player.Glyph, AnsiToColor(player.Color));
                     continue;
                 }
 
@@ -51,7 +50,7 @@ static class SadConsoleRenderer
                 var monster = tile.IsVisible ? game.MonsterAt(p) : null;
                 if (monster != null)
                 {
-                    surface.Surface.SetGlyph(sx, sy, monster.Glyph, AnsiToColor(monster.Color));
+                    surface.Surface.SetGlyph(x, y, monster.Glyph, AnsiToColor(monster.Color));
                     continue;
                 }
 
@@ -59,7 +58,7 @@ static class SadConsoleRenderer
                 var item = tile.IsVisible ? game.ItemAt(p) : null;
                 if (item != null)
                 {
-                    surface.Surface.SetGlyph(sx, sy, item.Glyph, AnsiToColor(item.Color));
+                    surface.Surface.SetGlyph(x, y, item.Glyph, AnsiToColor(item.Color));
                     continue;
                 }
 
@@ -73,7 +72,7 @@ static class SadConsoleRenderer
                         TileType.StairsUp   => (Palette.Gray, '<'),
                         _                   => (Palette.Gray, '#'),
                     };
-                    surface.Surface.SetGlyph(sx, sy, glyph, color);
+                    surface.Surface.SetGlyph(x, y, glyph, color);
                 }
                 else
                 {
@@ -84,55 +83,47 @@ static class SadConsoleRenderer
                         TileType.StairsUp   => (Palette.Cyan,  '<'),
                         _                   => (Palette.White, '#'),
                     };
-                    surface.Surface.SetGlyph(sx, sy, glyph, color);
+                    surface.Surface.SetGlyph(x, y, glyph, color);
                 }
             }
         }
     }
 
-    private static void DrawTitle(Game game, IScreenSurface surface)
+    public static void RenderStatus(Game game, IScreenSurface surface)
     {
-        string title = $" Dungeon Descent - Floor {game.Floor}/5 ";
-        if (title.Length < Map.Width)
-            title = title.PadRight(Map.Width);
-        surface.Surface.Print(0, 0, title, Palette.Yellow);
-    }
-
-    private static void DrawStatusBar(Game game, IScreenSurface surface)
-    {
+        surface.Surface.Clear();
         var p = game.Player;
-        int row = MapOffsetY + Map.Height;
 
-        // First line — colored stat segments printed left-to-right.
+        // Row 0 — colored stat segments printed left-to-right.
         int col = 0;
         Color hpColor = p.Hp < p.MaxHp / 3 ? Palette.Red : Palette.Green;
-        col = PrintSegment(surface, col, row, $"HP:{p.Hp}/{p.MaxHp}", hpColor);
-        col = PrintSegment(surface, col, row, "  ", Palette.White);
-        col = PrintSegment(surface, col, row, $"ATK:{p.Attack}", Palette.Cyan);
-        col = PrintSegment(surface, col, row, "  ", Palette.White);
-        col = PrintSegment(surface, col, row, $"DEF:{p.Defense}", Palette.Blue);
-        col = PrintSegment(surface, col, row, "  ", Palette.White);
-        col = PrintSegment(surface, col, row, $"LV:{p.Level}", Palette.Magenta);
-        col = PrintSegment(surface, col, row, "  ", Palette.White);
-        col = PrintSegment(surface, col, row, $"EXP:{p.Exp}/{p.ExpNext}", Palette.Yellow);
-        col = PrintSegment(surface, col, row, "  ", Palette.White);
-        col = PrintSegment(surface, col, row, $"Gold:{p.Gold}", Palette.Yellow);
-        col = PrintSegment(surface, col, row, "  ", Palette.White);
-        PrintSegment(surface, col, row, $"Score:{p.Score}", Palette.White);
+        col = PrintSegment(surface, col, 0, $"HP:{p.Hp}/{p.MaxHp}", hpColor);
+        col = PrintSegment(surface, col, 0, "  ", Palette.White);
+        col = PrintSegment(surface, col, 0, $"ATK:{p.Attack}", Palette.Cyan);
+        col = PrintSegment(surface, col, 0, "  ", Palette.White);
+        col = PrintSegment(surface, col, 0, $"DEF:{p.Defense}", Palette.Blue);
+        col = PrintSegment(surface, col, 0, "  ", Palette.White);
+        col = PrintSegment(surface, col, 0, $"LV:{p.Level}", Palette.Magenta);
+        col = PrintSegment(surface, col, 0, "  ", Palette.White);
+        col = PrintSegment(surface, col, 0, $"EXP:{p.Exp}/{p.ExpNext}", Palette.Yellow);
+        col = PrintSegment(surface, col, 0, "  ", Palette.White);
+        col = PrintSegment(surface, col, 0, $"Gold:{p.Gold}", Palette.Yellow);
+        col = PrintSegment(surface, col, 0, "  ", Palette.White);
+        PrintSegment(surface, col, 0, $"Score:{p.Score}", Palette.White);
 
-        surface.Surface.Print(0, row + 1,
+        surface.Surface.Print(0, 1,
             "[WASD/Arrows] Move  [>] Descend  [<] Ascend  [i] Inventory  [.] Wait  [q] Quit",
             Palette.Gray);
     }
 
-    private static void DrawMessageLog(Game game, IScreenSurface surface)
+    public static void RenderLog(Game game, IScreenSurface surface)
     {
-        int row = MapOffsetY + Map.Height + 2;
+        surface.Surface.Clear();
         var lines = game.Log.Lines;
         for (int i = 0; i < 3; i++)
         {
             string text = i < lines.Count ? lines[i] : "";
-            surface.Surface.Print(0, row + i, text.PadRight(Map.Width), Palette.White);
+            surface.Surface.Print(0, i, text.PadRight(Map.Width), Palette.White);
         }
     }
 

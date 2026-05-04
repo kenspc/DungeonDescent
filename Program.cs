@@ -6,9 +6,8 @@ Settings.WindowTitle = "Dungeon Descent";
 SadGame.Create(60, 26, (_, _) =>
 {
     var game = new DungeonDescent.Game();
-    var surface = new DungeonDescent.GameSurface(game);
-    surface.IsFocused = true;
-    SadGame.Instance.Screen = surface;
+    var root = new DungeonDescent.RootScreen(game);
+    SadGame.Instance.Screen = root;
     SadGame.Instance.DestroyDefaultStartingConsole();
 });
 SadGame.Instance.Run();
