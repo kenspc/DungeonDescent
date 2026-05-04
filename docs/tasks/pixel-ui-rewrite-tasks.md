@@ -317,7 +317,9 @@ GameOverScreen / VictoryScreen 的 `ProcessKeyboard` 收到任意按键 → 调 
 
 ### Task 13: 实体 `Color` 字段改 `SadRogue.Primitives.Color` 类型 + 删 `AnsiToColor`
 
-**Status:** TODO
+**Status:** DONE
+
+**Note:** Old `src/UI/Renderer.cs` and `src/Core/GameColors.cs` still compile after this change (Renderer.cs only uses `entity.Color` inside string interpolation, which falls back to `Color.ToString()`; the ANSI escape constants are still valid `string` literals in GameColors.cs). They are dead code at this point - Task 14 deletes both.
 
 **Depends on:** Task 12
 

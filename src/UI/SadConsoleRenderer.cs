@@ -6,9 +6,9 @@ namespace DungeonDescent;
 // SadConsole-flavoured replacement for the legacy Renderer.cs. After
 // Task 8 the main game screen is split into four surfaces (title, map,
 // status, log) so each Render* method targets a single dedicated surface
-// whose origin is (0, 0). All entity `Color` fields are still ANSI escape
-// strings during M2-M4; AnsiToColor is the bridge until M5 retypes them
-// to SadRogue.Primitives.Color.
+// whose origin is (0, 0). After Task 13 entity Color fields are typed as
+// SadRogue.Primitives.Color directly, so the legacy AnsiToColor bridge
+// is gone.
 static class SadConsoleRenderer
 {
     public static void RenderTitle(Game game, IScreenSurface surface)
@@ -42,7 +42,7 @@ static class SadConsoleRenderer
                 // Player
                 if (p == player.Position)
                 {
-                    surface.Surface.SetGlyph(x, y, player.Glyph, AnsiToColor(player.Color));
+                    surface.Surface.SetGlyph(x, y, player.Glyph, player.Color);
                     continue;
                 }
 
@@ -50,7 +50,7 @@ static class SadConsoleRenderer
                 var monster = tile.IsVisible ? game.MonsterAt(p) : null;
                 if (monster != null)
                 {
-                    surface.Surface.SetGlyph(x, y, monster.Glyph, AnsiToColor(monster.Color));
+                    surface.Surface.SetGlyph(x, y, monster.Glyph, monster.Color);
                     continue;
                 }
 
@@ -58,7 +58,7 @@ static class SadConsoleRenderer
                 var item = tile.IsVisible ? game.ItemAt(p) : null;
                 if (item != null)
                 {
-                    surface.Surface.SetGlyph(x, y, item.Glyph, AnsiToColor(item.Color));
+                    surface.Surface.SetGlyph(x, y, item.Glyph, item.Color);
                     continue;
                 }
 
@@ -154,7 +154,7 @@ static class SadConsoleRenderer
                 int row = 3 + i;
                 int c = 0;
                 c = PrintSegment(surface, c, row, $"  [{i + 1}] ", Palette.White);
-                c = PrintSegment(surface, c, row, item.Glyph.ToString(), AnsiToColor(item.Color));
+                c = PrintSegment(surface, c, row, item.Glyph.ToString(), item.Color);
                 PrintSegment(surface, c, row, $" {item.Name}", Palette.White);
             }
             surface.Surface.Print(0, 4 + inv.Count,
@@ -213,21 +213,4 @@ static class SadConsoleRenderer
         surface.Surface.Print(col, row, text, color);
         return col + text.Length;
     }
-
-    // Reverse maps the 9 foreground ANSI strings used by entities back to a
-    // SadRogue.Primitives.Color. M5 will delete this once entity types switch
-    // to Color directly.
-    private static Color AnsiToColor(string ansi) => ansi switch
-    {
-        GameColors.White   => Palette.White,
-        GameColors.Yellow  => Palette.Yellow,
-        GameColors.Green   => Palette.Green,
-        GameColors.Red     => Palette.Red,
-        GameColors.Cyan    => Palette.Cyan,
-        GameColors.Magenta => Palette.Magenta,
-        GameColors.Blue    => Palette.Blue,
-        GameColors.Gray    => Palette.Gray,
-        GameColors.DarkRed => Palette.DarkRed,
-        _                  => Palette.White,
-    };
 }

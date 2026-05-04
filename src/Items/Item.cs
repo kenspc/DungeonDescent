@@ -1,10 +1,12 @@
+using SadRogue.Primitives;
+
 namespace DungeonDescent;
 
 class Item
 {
     public string   Name     { get; set; } = "";
     public char     Glyph    { get; set; }
-    public string   Color    { get; set; } = GameColors.White;
+    public Color    Color    { get; set; } = Palette.White;
     public ItemType Type     { get; set; }
 
     public Func<Player, string> Apply { get; set; } = _ => "";
@@ -13,7 +15,7 @@ class Item
     {
         Name  = "Health Potion",
         Glyph = '!',
-        Color = GameColors.Magenta,
+        Color = Palette.Magenta,
         Type  = ItemType.Potion,
         Apply = p =>
         {
@@ -27,7 +29,7 @@ class Item
     {
         Name  = "Iron Sword",
         Glyph = '+',
-        Color = GameColors.Cyan,
+        Color = Palette.Cyan,
         Type  = ItemType.Sword,
         Apply = p =>
         {
@@ -40,7 +42,7 @@ class Item
     {
         Name  = "Leather Armor",
         Glyph = '[',
-        Color = GameColors.Blue,
+        Color = Palette.Blue,
         Type  = ItemType.Armor,
         Apply = p =>
         {
@@ -53,7 +55,7 @@ class Item
     {
         Name  = $"{amount} Gold",
         Glyph = '$',
-        Color = GameColors.Yellow,
+        Color = Palette.Yellow,
         Type  = ItemType.Gold,
         Apply = p =>
         {

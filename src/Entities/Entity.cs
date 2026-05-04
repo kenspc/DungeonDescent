@@ -1,3 +1,5 @@
+using SadRogue.Primitives;
+
 namespace DungeonDescent;
 
 abstract class Entity
@@ -5,7 +7,7 @@ abstract class Entity
     public Point Position { get; set; }
     public string Name    { get; init; } = "";
     public char   Glyph   { get; init; }
-    public string Color   { get; init; } = GameColors.White;
+    public Color  Color   { get; init; } = Palette.White;
 
     public int Hp    { get; set; }
     public int MaxHp { get; set; }
