@@ -94,22 +94,24 @@ static class SadConsoleRenderer
         surface.Surface.Clear();
         var p = game.Player;
 
-        // Row 0 — colored stat segments printed left-to-right.
+        // Row 0 — colored stat segments printed left-to-right. Single-space
+        // separators and abbreviated Gold/Score labels keep the worst-case
+        // line under the 60-column surface width even at maxed-out values.
         int col = 0;
         Color hpColor = p.Hp < p.MaxHp / 3 ? Palette.Red : Palette.Green;
         col = PrintSegment(surface, col, 0, $"HP:{p.Hp}/{p.MaxHp}", hpColor);
-        col = PrintSegment(surface, col, 0, "  ", Palette.White);
+        col = PrintSegment(surface, col, 0, " ", Palette.White);
         col = PrintSegment(surface, col, 0, $"ATK:{p.Attack}", Palette.Cyan);
-        col = PrintSegment(surface, col, 0, "  ", Palette.White);
+        col = PrintSegment(surface, col, 0, " ", Palette.White);
         col = PrintSegment(surface, col, 0, $"DEF:{p.Defense}", Palette.Blue);
-        col = PrintSegment(surface, col, 0, "  ", Palette.White);
+        col = PrintSegment(surface, col, 0, " ", Palette.White);
         col = PrintSegment(surface, col, 0, $"LV:{p.Level}", Palette.Magenta);
-        col = PrintSegment(surface, col, 0, "  ", Palette.White);
+        col = PrintSegment(surface, col, 0, " ", Palette.White);
         col = PrintSegment(surface, col, 0, $"EXP:{p.Exp}/{p.ExpNext}", Palette.Yellow);
-        col = PrintSegment(surface, col, 0, "  ", Palette.White);
-        col = PrintSegment(surface, col, 0, $"Gold:{p.Gold}", Palette.Yellow);
-        col = PrintSegment(surface, col, 0, "  ", Palette.White);
-        PrintSegment(surface, col, 0, $"Score:{p.Score}", Palette.White);
+        col = PrintSegment(surface, col, 0, " ", Palette.White);
+        col = PrintSegment(surface, col, 0, $"G:{p.Gold}", Palette.Yellow);
+        col = PrintSegment(surface, col, 0, " ", Palette.White);
+        PrintSegment(surface, col, 0, $"Sc:{p.Score}", Palette.White);
 
         // Hint must fit the 60-column status surface; longer strings are
         // silently truncated by SadConsole's Print, hiding the trailing keys.
