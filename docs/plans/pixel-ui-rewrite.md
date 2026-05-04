@@ -35,9 +35,9 @@
 
 ### 架构决策
 
-1. **改动严格隔离在 UI 层与主入口** — 所有改动发生在 `src/UI/`、`Program.cs`、`src/Core/GameColors.cs`。`Game.cs` / `Map.cs` / `src/Entities/*` / `src/Items/*` 不动。这是契约：任何要求修改这些文件的提议都触发回到 Discovery 阶段。
-2. **`Game.cs` 不认识 SadConsole** — 输入适配层在 `SadConsoleRenderer` 内部把 SadConsole `Keys` 翻译成 `ConsoleKeyInfo`，然后调用现有 `Game.HandleKey(ConsoleKeyInfo)`。`Game.cs` 的接口签名零变更。
-3. **从阻塞模型切换到事件驱动** — 删除 `Program.cs` 顶层 `while + ReadKey` 循环；改用 SadConsole `Game.Instance.OnUpdate` + `Console.ProcessKeyboard` 钩子。状态变化后 mark surface dirty 触发重绘。
+1. **改动严格隔离在 UI 层与主入口** — M0~M4 期间，所有改动发生在 `src/UI/`、`Program.cs`、`src/Core/GameColors.cs`。`Game.cs` / `Map.cs` / `src/Entities/*` / `src/Items/*` 不动。这是契约：任何在 M0~M4 阶段要求修改这些文件的提议都触发回到 Discovery 阶段。**M5 例外**：M5 会把实体类 `Color` 字段从 `string` 改为 `SadRogue.Primitives.Color`（同时 `Palette` 从 `src/UI/` 移到 `src/Core/`），这是显式技术债清理步骤，且 `Game.cs` 与 `Map.cs` 仍然不动。
+2. **`Game.cs` 不认识 SadConsole** — 输入适配层在独立类 `src/UI/SadConsoleKeyAdapter.cs` 内把 SadConsole `AsciiKey` 翻译成 `ConsoleKeyInfo`，然后由 `GameSurface.ProcessKeyboard` 调用 `Game.HandleKey(ConsoleKeyInfo)`。`Game.cs` 的接口签名零变更。
+3. **从阻塞模型切换到事件驱动** — 删除 `Program.cs` 顶层 `while + ReadKey` 循环；改用 SadConsole 主循环 + `ScreenObject.ProcessKeyboard` / `ScreenObject.Update(TimeSpan)` 钩子。游戏状态变化后由 `GameSurface.Refresh()` 重绘。
 4. **ANSI escape → `Color` 结构体** — `GameColors`（10 个 ANSI 字符串）整体替换为 `SadRogue.Primitives.Color` 常量映射（SadConsole 10.x 使用 `SadRogue.Primitives.Color`，不是 `Microsoft.Xna.Framework.Color`）；M5 阶段彻底删除 `GameColors.cs`。
 5. **Em-dash 兼容性处理** — 当前 `DrawTitle` 使用 Unicode `—`，CP437 默认字体无此字符。M2 阶段替换为 ASCII `-`；自定义字体迭代时可恢复。
 
@@ -139,7 +139,7 @@
 **做什么**
 
 1. **新建** `src/UI/SadConsoleRenderer.cs`，包含静态方法：
-   - `RenderAll(Game game, IScreenSurface surface)` — 等价旧 `Renderer.DrawAll`
+   - `RenderAll(Game game, IScreenSurface surface)` — 等价旧 `Renderer.DrawAll`；入口先调用 `surface.Surface.Clear()` 再分别绘制 title/map/status/log，避免上一帧残留（旧 `Console.Clear()` 的等价）
    - `RenderMap(Game game, IScreenSurface surface)` — 等价旧 `Renderer.DrawMap`
    - 私有 `Draw*` 方法对应旧 `Draw*`
 2. **新建** `src/UI/Palette.cs` 静态类，把 `GameColors` 的 ANSI 字符串映射为 `Color` 常量：
@@ -160,7 +160,7 @@
    （取值参考标准 16 色 IBM CGA 调色板，未来可在自定义字体迭代时替换）
 3. **修改** `Player`、`Monster`、`Item` 等使用 `Color` 的实体——**不改实体类签名**，而是 `SadConsoleRenderer` 内部把现有 `string Color`（ANSI 字符串）的字段反向映射回 `Color`：
    - 在 `SadConsoleRenderer.cs` 内部添加私有方法 `Color AnsiToColor(string ansi)`，对全部 10 个 ANSI 字符串做 switch
-   - **风险点**：实体类的 `Color` 字段类型是 `string`，存储 ANSI escape sequence——这条耦合在 M5 处理（届时 `Color` 字段直接改成 `Microsoft.Xna.Framework.Color` 类型）
+   - **风险点**：实体类的 `Color` 字段类型是 `string`，存储 ANSI escape sequence——这条耦合在 M5 处理（届时 `Color` 字段直接改成 `SadRogue.Primitives.Color` 类型）
 4. **修改** `Program.cs`：在 M1 host 基础上构造一个 `Game` 实例，在 `OnStart` 里调用 `SadConsoleRenderer.RenderAll(game, screen)`。仍无输入。
 5. **修改** title 字符串里的 `—` 为 `-`（CP437 兼容）。注意：要修改的是新建 `SadConsoleRenderer.cs` 内复制过来的 title 字符串（旧 `Renderer.cs` 仍保留至 M5 才删，旧文件不必改动）。
 
@@ -318,12 +318,18 @@
    - 删除"Verification is done by building and running manually"以下提到的 62×27 终端检查段落
    - 新增运行环境说明："Requires GUI environment: Windows native, WSL2 with WSLg (Win11), or Linux/macOS with display server"
    - 在依赖部分注明 SadConsole + MonoGame DesktopGL（这两个是首批第三方依赖，brief 已显式接受这条约束突破）
-5. **正交清理验证**：
+   - 修正 Architecture 段落："no third-party dependencies" 改为"depends on SadConsole + MonoGame DesktopGL"
+5. **更新** `README.md`：
+   - 第一段 "No third-party libraries — pure System.Console with ANSI color rendering" 需修正为反映 SadConsole + MonoGame
+   - "Requirements" 段去掉 "Terminal: minimum 62 columns × 27 rows" 与 "ANSI color support"，改为 GUI 环境要求
+   - "Architecture" 段（"No third-party libraries. Rendering uses raw ANSI escape sequences"）需重写
+   - 示例截图（ASCII art block）可保留作为视觉参考，并加注 "现已为 GUI 窗口渲染"
+6. **正交清理验证**：
    ```bash
    grep -rn "Console\.Write\|Console\.SetCursorPosition\|Console\.Clear\|GameColors\|\\\\x1b\[" src/ Program.cs
    ```
    预期返回零结果。
-6. **双端验证**：
+7. **双端验证**：
    - **WSL2**：`dotnet run` 完整跑一局到死亡或胜利，确认无报错
    - **Windows native**：通过 `\\wsl$\Ubuntu\home\kenspc\projects\DungeonDescent` 在 PowerShell 7 内 `cd` 进去 `dotnet run`（共享同一份代码、同一份 obj/bin），完整跑一局确认窗口正常出现且行为与 WSL2 端一致
 
@@ -385,8 +391,9 @@ dotnet run
 整个 plan 达成的标志：
 
 - [ ] M0 ~ M5 所有验收项通过
-- [ ] `git grep "Console\\.Write\\|GameColors\\|\\\\x1b\\["` 在 `src/` 与 `Program.cs` 内零命中
+- [ ] `git grep "Console\\.Write\\|Console\\.SetCursorPosition\\|Console\\.Clear\\|GameColors\\|\\\\x1b\\["` 在 `src/` 与 `Program.cs` 内零命中（与 M5 步骤 5 grep 一致）
 - [ ] `dotnet build` 零警告
 - [ ] WSL2 与 Windows native 各完整跑过至少一局
 - [ ] `CLAUDE.md` 更新到位（运行环境要求、依赖、终端尺寸说明）
+- [ ] `README.md` 更新（"No third-party libraries" / 终端尺寸要求 / ANSI 渲染描述等过期内容已修正）
 - [ ] 旧 `Renderer.cs` 与 `GameColors.cs` 已从仓库删除
