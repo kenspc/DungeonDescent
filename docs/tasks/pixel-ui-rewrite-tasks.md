@@ -126,7 +126,7 @@
 
 ### Task 6: 创建 `GameSurface`（事件驱动渲染封装）
 
-**Status:** TODO
+**Status:** DONE
 
 **Depends on:** Task 5
 
