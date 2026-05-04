@@ -3,11 +3,14 @@ using SadConsole.Input;
 
 namespace DungeonDescent;
 
-// Help overlay. Any key returns to RootScreen; the help screen never
-// mutates game state and never burns a turn.
+// Help overlay. Any non-modifier key returns to RootScreen; the help
+// screen never mutates game state and never burns a turn.
 class HelpScreen : ScreenSurface
 {
     private readonly RootScreen _root;
+    // Skip the very first ProcessKeyboard tick so the same '?' keypress
+    // that opened the overlay isn't immediately consumed to close it.
+    private bool _swallowFirstFrame = true;
 
     public HelpScreen(RootScreen root) : base(60, 26)
     {
@@ -20,7 +23,13 @@ class HelpScreen : ScreenSurface
 
     public override bool ProcessKeyboard(Keyboard keyboard)
     {
-        if (keyboard.KeysPressed.Count > 0)
+        if (_swallowFirstFrame)
+        {
+            _swallowFirstFrame = false;
+            return false;
+        }
+
+        if (OverlayInput.HasNonModifierKeyPress(keyboard))
         {
             _root.CloseOverlay();
             return true;

@@ -3,10 +3,15 @@ using SadConsole.Input;
 
 namespace DungeonDescent;
 
-// Final screen shown when Game.Status == Won. Any key terminates the
-// process; there is no way back to gameplay.
+// Final screen shown when Game.Status == Won. Any non-modifier key
+// terminates the process; there is no way back to gameplay. The first
+// keyboard tick is intentionally swallowed so the keypress that
+// triggered victory (or any held key) does not dismiss the screen
+// before the player can read the score.
 class VictoryScreen : ScreenSurface
 {
+    private bool _swallowFirstFrame = true;
+
     public VictoryScreen(Game game) : base(60, 26)
     {
         IsFocused   = true;
@@ -16,7 +21,13 @@ class VictoryScreen : ScreenSurface
 
     public override bool ProcessKeyboard(Keyboard keyboard)
     {
-        if (keyboard.KeysPressed.Count > 0)
+        if (_swallowFirstFrame)
+        {
+            _swallowFirstFrame = false;
+            return false;
+        }
+
+        if (OverlayInput.HasNonModifierKeyPress(keyboard))
         {
             SadConsole.Game.Instance.MonoGameInstance.Exit();
             return true;
