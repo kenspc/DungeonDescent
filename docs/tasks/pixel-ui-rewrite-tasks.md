@@ -54,7 +54,7 @@
 
 ### Task 3: 创建 `Palette` + `SadConsoleRenderer` (含 AnsiToColor 适配)
 
-**Status:** TODO
+**Status:** DONE
 
 **Depends on:** Task 2
 
