@@ -13,6 +13,7 @@
 - 自定义像素字体烘焙、色板精调、动画、tileset、粒子效果
 - 跨平台单文件 exe 打包 / 发布
 - 任何游戏机制变更（`Game.cs` / `Map.cs` / 实体类 / Item 行为）
+- 窗口动态 resize / 全屏切换（首版固定窗口尺寸，M1 用 80×30 占位、M3 起切换到 60×26 与游戏 UI 等大；运行时不响应用户拖拽 resize）
 
 ## Context
 
@@ -226,8 +227,14 @@
        private void Refresh() => SadConsoleRenderer.RenderAll(_game, this);
    }
    ```
-2. **新建** `src/UI/SadConsoleKeyAdapter.cs`：把 SadConsole `Keys` 转 `ConsoleKeyInfo`。重点映射 W/A/S/D、Arrow、`>`、`<`、`.`、`q`、`i`、`?`、Escape、数字 1-9。
-3. **修改** `Program.cs`：移除"渲染一次就停"的逻辑，改为构造 `GameSurface` 并塞给 `Game.Instance.Screen`。SadConsole 主循环自动调度 `ProcessKeyboard`。
+2. **新建** `src/UI/SadConsoleKeyAdapter.cs`：把 SadConsole `AsciiKey`（`keyboard.KeysPressed` 元素类型）转成 `ConsoleKeyInfo`。重点映射：
+   - 字母 / 方向：W/A/S/D、ArrowUp/Down/Left/Right、`q`、`i`、Escape
+   - **shift 修饰**：`>`（Shift+`.`，`Keys.OemPeriod` + Shift）、`<`（Shift+`,`，`Keys.OemComma` + Shift）、`?`（Shift+`/`，`Keys.OemQuestion` + Shift）；adapter 需读取 `keyboard.IsKeyDown(Keys.LeftShift)` / `IsKeyDown(Keys.RightShift)` 才能区分
+   - 字符键：`.`（`Keys.OemPeriod` 不带 shift）、数字 1-9
+   - **关键产出契约**：`Game.HandleKey` 同时使用 `ConsoleKeyInfo.Key`（识别 ArrowUp 等）与 `ConsoleKeyInfo.KeyChar`（识别 `>`、`<`、`.`），adapter 必须为每条映射同时生成两个字段。例如：`new ConsoleKeyInfo('>', ConsoleKey.OemPeriod, shift:true, alt:false, control:false)`。
+   - 单元自测建议：在 adapter 内部加一个静态字典或 switch，映射用 `(Keys, bool shift)` 元组当 key，`ConsoleKeyInfo` 当 value。
+3. **修改** `Program.cs`：移除"渲染一次就停"的逻辑，改为构造 `GameSurface` 并塞给 `SadGame.Instance.Screen`。SadConsole 主循环自动调度 `ProcessKeyboard`。
+   - **窗口尺寸过渡**：M1/M2 用 `SadGame.Create(80, 30)`（占位），M3 起把 `Create` 调用改为 `SadGame.Create(60, 26)`，与 `GameSurface(60, 26)` 等大；M4 拆分多 surface 后整体仍保持 60×26。如果窗口尺寸超出实际渲染区域，会出现黑色边带——视觉可接受但应在 M3 同步调整。
 4. **暂不处理** inventory / help / game over overlay（M4）。在 `GameSurface.ProcessKeyboard` 内对特殊键单独分支处理：`q` 直接调用 `SadConsole.Game.Instance.MonoGameInstance.Exit()` 退出窗口；`i` / `?` 暂时落入 no-op 分支（`Game.HandleKey` 不识别这些键会自动跳过，因此即使误传也不会触发 turn logic，但显式拦截更清晰）。
 5. **保留** `Program.cs` 在 `SadGame.Instance.Run()` 后的进程退出语义（exit code 0），与 M1 一致。
 
@@ -299,7 +306,11 @@
 1. **删除文件**（直接 `git rm`）：
    - `src/UI/Renderer.cs`
    - `src/Core/GameColors.cs`
-2. **修改实体类的 `Color` 字段**：把 `Player`、`Monster`、`Item`、`MonsterTemplate` 中 `string Color` 字段类型改为 `SadRogue.Primitives.Color`。直接构造调用：`Color = new Color(255, 85, 85)` 等（参考 `Palette` 常量）。
+2. **修改实体类的 `Color` 字段**：把 `Player`、`Monster`、`Item`、`MonsterTemplate` 中 `string Color` 字段类型改为 `SadRogue.Primitives.Color`。
+   - **依赖方向问题**：实体类位于 `src/Entities/` 与 `src/Items/`，原本不引用 UI 层。M5 之前 `Palette` 放在 `src/UI/Palette.cs` 是正确的（UI 层内部使用）。M5 修改字段类型后，实体若直接用 `Palette.Yellow` 会让 entity 反向依赖 UI 层，破坏分层。**两种方案选其一**：
+     - **方案 A（推荐）**：把 `Palette` 从 `src/UI/Palette.cs` 移到 `src/Core/Palette.cs`，让 entity / item 与 UI 都从 Core 引用，依赖方向干净。M5 步骤里同步执行此移动。
+     - **方案 B**：实体类内联裸写 `new Color(255, 255, 85)` 等 RGB 值，不依赖 `Palette`。代价是颜色常量散落，未来调色板调整需要多文件修改。
+   - 选定方案 A 并在执行 M5 时同步 `git mv src/UI/Palette.cs src/Core/Palette.cs`，更新所有引用。
    - 这一步会让 `SadConsoleRenderer` 内部的 `AnsiToColor` 适配方法失去作用，应同时删除
 3. **删除** `Program.cs` 顶层的旧代码痕迹：
    - `Console.OutputEncoding = ...`、`Console.CursorVisible = false`、62×27 终端尺寸检查全部删除
