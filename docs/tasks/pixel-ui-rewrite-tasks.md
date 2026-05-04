@@ -97,7 +97,9 @@
 
 ### Task 5: 创建 `SadConsoleKeyAdapter`（按键映射表）
 
-**Status:** TODO
+**Status:** DONE
+
+**Implementation note:** SadConsole 10.9.0 exposes its own `SadConsole.Input.Keys` enum (mirroring `Microsoft.Xna.Framework.Input.Keys`); `AsciiKey.Key` is `SadConsole.Input.Keys`, so the switch is keyed on that type. WASD letter keys map to `KeyChar='w'..'d'` (lowercase) so `char.ToLower(...)` in `Game.HandleKey` is a no-op. Arrow keys deliberately use `KeyChar='\0'` since `Game.HandleKey` matches them on `Key`, not `KeyChar`.
 
 **Depends on:** Task 4
 
