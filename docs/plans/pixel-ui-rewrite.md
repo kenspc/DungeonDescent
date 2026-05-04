@@ -308,7 +308,7 @@
 1. **删除文件**（直接 `git rm`）：
    - `src/UI/Renderer.cs`
    - `src/Core/GameColors.cs`
-2. **修改实体类的 `Color` 字段**：把 `Player`、`Monster`、`Item`、`MonsterTemplate` 中 `string Color` 字段类型改为 `SadRogue.Primitives.Color`。
+2. **修改实体类的 `Color` 字段**：把 `Entity`（基类，`src/Entities/Entity.cs:8`）以及 `MonsterTemplate`、`Item` 中的 `string Color` 字段类型改为 `SadRogue.Primitives.Color`，并把 `Player` 构造函数、`Monster.From` 工厂、`Item.Potion`/`Sword`/`Armor`/`GoldPile` 工厂以及 `MonsterTemplates.Rat`/`Goblin`/`Troll`/`Dragon` 静态实例中所有 `GameColors.X` 赋值替换为 `Palette.X`。`Color` 字段实际声明在 `Entity` 基类，`Player`/`Monster` 通过继承获得，无需改动它们的字段声明（仅修构造/工厂中的赋值）。
    - **依赖方向问题**：实体类位于 `src/Entities/` 与 `src/Items/`，原本不引用 UI 层。M5 之前 `Palette` 放在 `src/UI/Palette.cs` 是正确的（UI 层内部使用）。M5 修改字段类型后，实体若直接用 `Palette.Yellow` 会让 entity 反向依赖 UI 层，破坏分层。**两种方案选其一**：
      - **方案 A（推荐）**：把 `Palette` 从 `src/UI/Palette.cs` 移到 `src/Core/Palette.cs`，让 entity / item 与 UI 都从 Core 引用，依赖方向干净。M5 步骤里同步执行此移动。
      - **方案 B**：实体类内联裸写 `new Color(255, 255, 85)` 等 RGB 值，不依赖 `Palette`。代价是颜色常量散落，未来调色板调整需要多文件修改。
