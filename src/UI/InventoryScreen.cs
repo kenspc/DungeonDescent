@@ -30,22 +30,30 @@ class InventoryScreen : ScreenSurface
                 return true;
             }
 
-            if (key.Key >= Keys.D1 && key.Key <= Keys.D9 &&
-                _game.Player.Inventory.Count > 0)
+            int? slot = TryGetSlotIndex(key.Key);
+            if (slot != null && _game.Player.Inventory.Count > 0 &&
+                slot.Value < _game.Player.Inventory.Count)
             {
-                int index = (int)key.Key - (int)Keys.D1;
-                if (index < _game.Player.Inventory.Count)
-                {
-                    string msg = _game.UseInventoryItem(index);
-                    _game.Log.Add(msg);
-                    _game.EndPlayerTurn(); // using an item costs a turn
-                    _root.CloseOverlay();
-                    _root.Refresh();
-                    return true;
-                }
+                string msg = _game.UseInventoryItem(slot.Value);
+                _game.Log.Add(msg);
+                _game.EndPlayerTurn(); // using an item costs a turn
+                _root.CloseOverlay();
+                _root.Refresh();
+                return true;
             }
         }
         return false;
+    }
+
+    // Map both the number row (D1..D9) and the numpad (NumPad1..NumPad9)
+    // to a 0-based inventory slot index.
+    private static int? TryGetSlotIndex(Keys key)
+    {
+        if (key >= Keys.D1 && key <= Keys.D9)
+            return (int)key - (int)Keys.D1;
+        if (key >= Keys.NumPad1 && key <= Keys.NumPad9)
+            return (int)key - (int)Keys.NumPad1;
+        return null;
     }
 
     private void Refresh() => SadConsoleRenderer.DrawInventory(_game, this);

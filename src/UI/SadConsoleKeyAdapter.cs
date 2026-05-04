@@ -40,6 +40,16 @@ static class SadConsoleKeyAdapter
             return new ConsoleKeyInfo(ch, ck, false, false, false);
         }
 
+        // Numpad 1-9. Mirror the number-row mapping so users with a
+        // numpad can also pick inventory slots.
+        if (key.Key >= Keys.NumPad1 && key.Key <= Keys.NumPad9)
+        {
+            int offset = (int)key.Key - (int)Keys.NumPad1;
+            char ch = (char)('1' + offset);
+            ConsoleKey ck = (ConsoleKey)((int)ConsoleKey.NumPad1 + offset);
+            return new ConsoleKeyInfo(ch, ck, false, false, false);
+        }
+
         // Punctuation that Game.HandleKey switches on.
         switch (key.Key)
         {
