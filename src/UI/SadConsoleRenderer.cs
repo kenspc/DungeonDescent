@@ -111,8 +111,10 @@ static class SadConsoleRenderer
         col = PrintSegment(surface, col, 0, "  ", Palette.White);
         PrintSegment(surface, col, 0, $"Score:{p.Score}", Palette.White);
 
+        // Hint must fit the 60-column status surface; longer strings are
+        // silently truncated by SadConsole's Print, hiding the trailing keys.
         surface.Surface.Print(0, 1,
-            "[WASD/Arrows] Move  [>] Descend  [<] Ascend  [i] Inventory  [.] Wait  [q] Quit",
+            "[WASD] Move [>/<] Stairs [i] Inv [?] Help [.] Wait [q] Quit",
             Palette.Gray);
     }
 
