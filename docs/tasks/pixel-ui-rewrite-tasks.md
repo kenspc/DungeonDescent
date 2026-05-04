@@ -239,7 +239,9 @@
 
 ### Task 10: `HelpScreen` overlay
 
-**Status:** TODO
+**Status:** DONE
+
+**Note:** Visual portion (help screen content correct, returns on any key, doesn't burn turn) DEFERRED — needs human visual verification.
 
 **Depends on:** Task 9
 

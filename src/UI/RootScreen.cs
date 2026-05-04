@@ -63,6 +63,13 @@ class RootScreen : ScreenObject
                 return true;
             }
 
+            if (key.Key == Keys.OemQuestion &&
+                (keyboard.IsKeyDown(Keys.LeftShift) || keyboard.IsKeyDown(Keys.RightShift)))
+            {
+                OpenOverlay(new HelpScreen(this));
+                return true;
+            }
+
             var info = SadConsoleKeyAdapter.ToConsoleKeyInfo(key, keyboard);
             if (info != null)
             {
