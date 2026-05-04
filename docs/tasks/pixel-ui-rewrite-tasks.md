@@ -352,7 +352,9 @@ GameOverScreen / VictoryScreen 的 `ProcessKeyboard` 收到任意按键 → 调 
 
 ### Task 14: 删除 `Renderer.cs` 与 `GameColors.cs`
 
-**Status:** TODO
+**Status:** DONE
+
+**Note:** Also removed the now-stale "GameColors.cs" reference from the comment in `src/Core/Palette.cs` so that the grep contract truly returns zero hits.
 
 **Depends on:** Task 13
 

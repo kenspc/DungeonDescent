@@ -2,9 +2,9 @@ using SadRogue.Primitives;
 
 namespace DungeonDescent;
 
-// Foreground palette (IBM CGA 16-color, mapped from the legacy ANSI codes in
-// GameColors.cs). Background is always console default (black). Reset / Bold
-// have no analogue under SadConsole — they are intentionally absent.
+// Foreground palette (IBM CGA 16-color). Background is always console
+// default (black). Reset / Bold have no analogue under SadConsole and are
+// intentionally absent.
 static class Palette
 {
     public static readonly Color White   = new(255, 255, 255);
