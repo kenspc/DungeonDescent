@@ -378,7 +378,9 @@ GameOverScreen / VictoryScreen 的 `ProcessKeyboard` 收到任意按键 → 调 
 
 ### Task 15: 清理 `Program.cs` 旧 Console 初始化代码
 
-**Status:** TODO
+**Status:** DONE
+
+**Note:** All five legacy `System.Console.*` references (`OutputEncoding`, `CursorVisible`, `WindowWidth/Height`, `Title`) were already absent after Task 2's full Program.cs rewrite — none crept back across Tasks 3-14. Final `Program.cs` is 15 lines.
 
 **Depends on:** Task 14
 
