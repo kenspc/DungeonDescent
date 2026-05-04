@@ -33,11 +33,9 @@ static class SadConsoleRenderer
                 var tile = map[x, y];
                 var p    = new Point(x, y);
 
-                if (!tile.IsExplored)
-                {
-                    surface.Surface.SetGlyph(x, y, ' ', Palette.White);
-                    continue;
-                }
+                // Surface.Clear() already blanked every cell, so unexplored
+                // tiles can simply be skipped.
+                if (!tile.IsExplored) continue;
 
                 // Player
                 if (p == player.Position)
@@ -146,9 +144,11 @@ static class SadConsoleRenderer
         PrintSegment(surface, col, 1, $"  Carry: {p.Inventory.Count}/{Player.MaxInventory}", Palette.White);
 
         var inv = game.Player.Inventory;
+        int promptRow;
         if (inv.Count == 0)
         {
             surface.Surface.Print(0, 3, "(empty)", Palette.White);
+            promptRow = 5;
         }
         else
         {
@@ -161,9 +161,15 @@ static class SadConsoleRenderer
                 c = PrintSegment(surface, c, row, item.Glyph.ToString(), item.Color);
                 PrintSegment(surface, c, row, $" {item.Name}", Palette.White);
             }
-            surface.Surface.Print(0, 4 + inv.Count,
-                "Enter number to use item, or [Esc] to cancel:", Palette.White);
+            promptRow = 4 + inv.Count;
         }
+
+        // Always show how to leave the screen, even if the inventory is
+        // empty, so users are not stuck wondering how to escape.
+        string prompt = inv.Count == 0
+            ? "Press [Esc] to cancel."
+            : "Enter number to use item, or [Esc] to cancel:";
+        surface.Surface.Print(0, promptRow, prompt, Palette.White);
     }
 
     public static void DrawHelp(IScreenSurface surface)
@@ -188,26 +194,34 @@ static class SadConsoleRenderer
     public static void DrawGameOver(Game game, IScreenSurface surface)
     {
         surface.Surface.Clear();
-        surface.Surface.Print(2, 1, "  ==============================", Palette.Red);
-        surface.Surface.Print(2, 2, "           YOU DIED            ",   Palette.Red);
-        surface.Surface.Print(2, 3, "  ==============================", Palette.Red);
-        surface.Surface.Print(2, 5, $"  Floor reached : {game.Floor}",        Palette.White);
-        surface.Surface.Print(2, 6, $"  Level         : {game.Player.Level}", Palette.White);
-        surface.Surface.Print(2, 7, $"  Gold          : {game.Player.Gold}",  Palette.White);
-        surface.Surface.Print(2, 8, $"  Final Score   : {game.Player.Score}", Palette.White);
-        surface.Surface.Print(2, 10, "  Press any key to exit...", Palette.Gray);
+        // Banner is 30 cols wide; center it inside the 60-col window so
+        // the right side is not visually empty.
+        const string banner = "==============================";
+        const string title  = "          YOU DIED            ";
+        int col = (Layout.WindowWidth - banner.Length) / 2;
+        surface.Surface.Print(col, 1, banner, Palette.Red);
+        surface.Surface.Print(col, 2, title,  Palette.Red);
+        surface.Surface.Print(col, 3, banner, Palette.Red);
+        surface.Surface.Print(col, 5, $"Floor reached : {game.Floor}",        Palette.White);
+        surface.Surface.Print(col, 6, $"Level         : {game.Player.Level}", Palette.White);
+        surface.Surface.Print(col, 7, $"Gold          : {game.Player.Gold}",  Palette.White);
+        surface.Surface.Print(col, 8, $"Final Score   : {game.Player.Score}", Palette.White);
+        surface.Surface.Print(col, 10, "Press any key to exit...", Palette.Gray);
     }
 
     public static void DrawVictory(Game game, IScreenSurface surface)
     {
         surface.Surface.Clear();
-        surface.Surface.Print(2, 1, "  ==============================", Palette.Yellow);
-        surface.Surface.Print(2, 2, "     YOU ESCAPED THE DUNGEON!  ",   Palette.Yellow);
-        surface.Surface.Print(2, 3, "  ==============================", Palette.Yellow);
-        surface.Surface.Print(2, 5, $"  Level         : {game.Player.Level}", Palette.White);
-        surface.Surface.Print(2, 6, $"  Gold          : {game.Player.Gold}",  Palette.White);
-        surface.Surface.Print(2, 7, $"  Final Score   : {game.Player.Score}", Palette.White);
-        surface.Surface.Print(2, 9, "  Press any key to exit...", Palette.Gray);
+        const string banner = "==============================";
+        const string title  = "    YOU ESCAPED THE DUNGEON!  ";
+        int col = (Layout.WindowWidth - banner.Length) / 2;
+        surface.Surface.Print(col, 1, banner, Palette.Yellow);
+        surface.Surface.Print(col, 2, title,  Palette.Yellow);
+        surface.Surface.Print(col, 3, banner, Palette.Yellow);
+        surface.Surface.Print(col, 5, $"Level         : {game.Player.Level}", Palette.White);
+        surface.Surface.Print(col, 6, $"Gold          : {game.Player.Gold}",  Palette.White);
+        surface.Surface.Print(col, 7, $"Final Score   : {game.Player.Score}", Palette.White);
+        surface.Surface.Print(col, 9, "Press any key to exit...", Palette.Gray);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
