@@ -405,7 +405,7 @@ GameOverScreen / VictoryScreen 的 `ProcessKeyboard` 收到任意按键 → 调 
 
 ### Task 16: 更新 `CLAUDE.md` 与 `README.md`
 
-**Status:** TODO
+**Status:** DONE
 
 **Depends on:** Task 15
 

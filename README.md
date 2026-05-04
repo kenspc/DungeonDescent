@@ -2,14 +2,17 @@
 
 **GitHub:** https://github.com/kenspc/DungeonDescent
 
-A turn-based ASCII roguelike dungeon crawler built with .NET 8 Console. No third-party libraries — pure `System.Console` with ANSI color rendering.
+A turn-based ASCII-style roguelike dungeon crawler built with .NET 8,
+[SadConsole 10.x](https://sadconsole.com/) and MonoGame DesktopGL. The
+game opens a GUI window and renders text glyphs through SadConsole's
+tile engine — no terminal escape sequences are involved.
 
 ```
- Dungeon Descent — Floor 3/5
+ Dungeon Descent - Floor 3/5
 
         ############
         #..........#      #########
-        #....@.....#──────#.......#
+        #....@.....#------#.......#
         #..........#      #...r...#
         ############      #.......#
                           ###.#####
@@ -27,11 +30,14 @@ You slay the Goblin! Level up! Now level 2. HP +10, ATK +1.
 Picked up Leather Armor.
 ```
 
+> The screenshot above is the in-game layout. It is now rendered as a GUI
+> window, not as terminal output.
+
 ## Requirements
 
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
-- Terminal: minimum **62 columns × 27 rows**
-- ANSI color support (Windows Terminal, macOS Terminal, any Linux terminal)
+- A GUI environment: Windows native, WSL2 with WSLg (Windows 11), or
+  Linux / macOS with an active display server.
 
 ## Running the Game
 
@@ -170,15 +176,14 @@ Each floor is **procedurally generated** with random rooms and corridors.
 
 ```
 DungeonDescent/
-├── Program.cs                 # Entry point, main game loop, inventory handler
-├── DungeonDescent.csproj      # .NET 8 project file
-├── docs/
-│   └── plans/                 # Design and implementation documents
+├── Program.cs                 # Entry point; boots SadConsole + RootScreen
+├── DungeonDescent.csproj      # .NET 8 project file (refs SadConsole + MonoGame)
+├── docs/                      # Design and implementation documents
 └── src/
     ├── Core/
     │   ├── Point.cs           # 2D coordinate value type (record struct)
     │   ├── Direction.cs       # Cardinal direction constants (Up/Down/Left/Right)
-    │   └── GameColors.cs      # ANSI escape code color constants
+    │   └── Palette.cs         # 9-color foreground palette (SadRogue.Primitives.Color)
     ├── Map/
     │   ├── TileType.cs        # Tile type enum (Wall, Floor, StairsDown, StairsUp)
     │   ├── Tile.cs            # Tile state (type, explored, visible)
@@ -193,8 +198,14 @@ DungeonDescent/
     │   ├── ItemType.cs        # Item type enum (Potion, Sword, Armor, Gold)
     │   └── Item.cs            # Item factory methods + PositionedItem (world placement)
     ├── UI/
-    │   ├── MessageLog.cs      # Scrolling 3-line message queue
-    │   └── Renderer.cs        # All Console drawing (map, HUD, overlays)
+    │   ├── MessageLog.cs           # Scrolling 3-line message queue
+    │   ├── SadConsoleRenderer.cs   # Stateless drawing into IScreenSurface
+    │   ├── SadConsoleKeyAdapter.cs # AsciiKey -> ConsoleKeyInfo bridge
+    │   ├── RootScreen.cs           # Top-level ScreenObject + 4 sub-surfaces
+    │   ├── InventoryScreen.cs      # Inventory overlay
+    │   ├── HelpScreen.cs           # Help overlay
+    │   ├── GameOverScreen.cs       # YOU DIED end card
+    │   └── VictoryScreen.cs        # YOU ESCAPED end card
     └── Game.cs                # Game state, turn logic, floor management, spawning
 ```
 
@@ -203,22 +214,23 @@ DungeonDescent/
 The game follows a simple layered design:
 
 ```
-Program.cs  ──▶  Game.cs  ──▶  Map / Entities / Items
-               (turn logic)
-                    │
-                    ▼
-             Renderer.cs
-           (draw after each turn)
+Program.cs ──▶ SadConsole.Game ──▶ RootScreen ──▶ Game.cs ──▶ Map / Entities / Items
+                                  (overlays)     (turn logic)
+                                       │
+                                       ▼
+                              SadConsoleRenderer.cs
+                              (draw after each turn)
 ```
 
 **Turn flow:**
-1. `Renderer.DrawAll()` — redraw screen
-2. `Console.ReadKey()` — wait for player input
-3. `Game.HandleKey()` — resolve player action (move, attack, use stairs)
-4. `Game.EndPlayerTurn()` — all monsters take one step (BFS toward player)
-5. Check win/lose condition → repeat or show end screen
+1. `RootScreen.ProcessKeyboard()` captures the AsciiKey.
+2. `SadConsoleKeyAdapter` maps it into a `System.ConsoleKeyInfo`.
+3. `Game.HandleKey()` resolves the player action (move, attack, use stairs).
+4. `Game.EndPlayerTurn()` advances all monsters (BFS toward player).
+5. `RootScreen.Refresh()` redraws title / map / status / log.
+6. `RootScreen.Update()` watches `Game.Status` each frame and promotes to `GameOverScreen` / `VictoryScreen` when needed.
 
-**No third-party libraries.** Rendering uses raw ANSI escape sequences via `Console.Write`. Input is captured with `Console.ReadKey(intercept: true)` so keypresses are not echoed.
+**Dependencies:** SadConsole 10.x and MonoGame DesktopGL (DesktopGL pulls in SDL2 and OpenAL native libraries automatically into the build output).
 
 ## Technical Notes
 
