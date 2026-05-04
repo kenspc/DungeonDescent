@@ -295,7 +295,7 @@ GameOverScreen / VictoryScreen 的 `ProcessKeyboard` 收到任意按键 → 调 
 
 ### Task 12: 移动 `Palette` 到 `src/Core/`
 
-**Status:** TODO
+**Status:** DONE
 
 **Depends on:** Task 11
 
