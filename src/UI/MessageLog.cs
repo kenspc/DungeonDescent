@@ -2,8 +2,12 @@ namespace DungeonDescent;
 
 class MessageLog
 {
+    // Maximum number of recent lines retained. Must equal the row count
+    // of the log surface (see Layout.LogHeight) so the renderer never
+    // has to truncate or pad against a different bound.
+    public const int Capacity = 3;
+
     private readonly Queue<string> _messages = new();
-    private const int Capacity = 3;
 
     public void Add(string msg)
     {

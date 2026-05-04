@@ -124,7 +124,7 @@ static class SadConsoleRenderer
     {
         surface.Surface.Clear();
         var lines = game.Log.Lines;
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < MessageLog.Capacity; i++)
         {
             string text = i < lines.Count ? lines[i] : "";
             surface.Surface.Print(0, i, text.PadRight(Map.Width), Palette.White);
