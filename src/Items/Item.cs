@@ -19,7 +19,10 @@ class Item
         Type  = ItemType.Potion,
         Apply = p =>
         {
-            int healed = Math.Min(30, p.MaxHp - p.Hp);
+            // Math.Max guards against the case where Hp temporarily exceeds
+            // MaxHp (future buffs); without it MaxHp - Hp could be negative
+            // and the potion would damage the player.
+            int healed = Math.Max(0, Math.Min(30, p.MaxHp - p.Hp));
             p.Hp += healed;
             return $"You drink the potion. Restored {healed} HP.";
         }
