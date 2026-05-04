@@ -438,7 +438,11 @@ GameOverScreen / VictoryScreen 的 `ProcessKeyboard` 收到任意按键 → 调 
 
 ### Task 17: 双端运行验证
 
-**Status:** TODO
+**Status:** PARTIAL — WSL2 verified (process), Windows BLOCKED (user must run manually)
+
+**WSL2 side:** `dotnet build` zero warnings/errors; `dotnet run` starts cleanly, message pump stays alive past 5 seconds, terminates via SIGTERM with no stderr. Visual portion (full game playthrough — UI elements, overlays, end screens) DEFERRED — needs human visual verification per custom instruction #3.
+
+**Windows native side:** BLOCKED — User must run this step on Windows manually (per custom instruction #4: WSL2 environment cannot execute Windows-native `dotnet run` against `\\wsl$\Ubuntu\...`).
 
 **Depends on:** Task 16
 
