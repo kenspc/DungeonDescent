@@ -438,11 +438,11 @@ GameOverScreen / VictoryScreen 的 `ProcessKeyboard` 收到任意按键 → 调 
 
 ### Task 17: 双端运行验证
 
-**Status:** PARTIAL — WSL2 verified (process), Windows BLOCKED (user must run manually)
+**Status:** DONE — both sides verified by user (2026-05-04).
 
-**WSL2 side:** `dotnet build` zero warnings/errors; `dotnet run` starts cleanly, message pump stays alive past 5 seconds, terminates via SIGTERM with no stderr. Visual portion (full game playthrough — UI elements, overlays, end screens) DEFERRED — needs human visual verification per custom instruction #3.
+**WSL2 side:** `dotnet build` zero warnings/errors; `dotnet run` starts cleanly. User confirmed full game playthrough works: UI elements render, gameplay parity with previous Console version, only difference is "no longer a Console".
 
-**Windows native side:** BLOCKED — User must run this step on Windows manually (per custom instruction #4: WSL2 environment cannot execute Windows-native `dotnet run` against `\\wsl$\Ubuntu\...`).
+**Windows native side:** User ran `dotnet run` from PowerShell 7 against `\\wsl.localhost\Ubuntu-24.04\...` mount path. **Required fix mid-verification**: original `global.json` pinned `version: "8.0.125"` with default `patch` rollForward policy, which refused to accept Windows-installed 8.0.420 (different feature band). Resolved by adding `"rollForward": "latestFeature"` to `global.json` (commit `0f58672`). After fix, Windows side runs successfully.
 
 **Depends on:** Task 16
 
