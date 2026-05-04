@@ -158,10 +158,10 @@
    }
    ```
    （取值参考标准 16 色 IBM CGA 调色板，未来可在自定义字体迭代时替换）
-3. **修改** `Player`、`Monster`、`Item` 等使用 `Color` 的实体——**不改实体类签名**，而是 `SadConsoleRenderer` 内部把现有 `string Color`（ANSI 字符串）的字段反向映射回 `Color`：
-   - 在 `SadConsoleRenderer.cs` 内部添加私有方法 `Color AnsiToColor(string ansi)`，对全部 10 个 ANSI 字符串做 switch
+3. **不改实体类签名**——而是 `SadConsoleRenderer` 内部把现有 `string Color`（ANSI 字符串）的字段反向映射回 `Color`：
+   - 在 `SadConsoleRenderer.cs` 内部添加私有方法 `Color AnsiToColor(string ansi)`，对 `GameColors` 中实际被实体使用的 9 个前景色字符串做 switch（White / Yellow / Green / Red / Cyan / Magenta / Blue / Gray / DarkRed）。`Reset` / `Bold` / `BgBlack` 不参与映射（renderer 内部不再需要它们）。
    - **风险点**：实体类的 `Color` 字段类型是 `string`，存储 ANSI escape sequence——这条耦合在 M5 处理（届时 `Color` 字段直接改成 `SadRogue.Primitives.Color` 类型）
-4. **修改** `Program.cs`：在 M1 host 基础上构造一个 `Game` 实例，在 `OnStart` 里调用 `SadConsoleRenderer.RenderAll(game, screen)`。仍无输入。
+4. **修改** `Program.cs`：在 M1 host 基础上构造一个 `DungeonDescent.Game` 实例（注意命名空间消歧——用 `var game = new DungeonDescent.Game();`），在 `OnStart` 闭包内调用 `SadConsoleRenderer.RenderAll(game, screen);`。`screen` 仍是 M1 中创建的 `Console(80, 30)` 局部变量；保持窗口存活直到用户按任意键关闭（M1 行为）。仍无输入处理逻辑。
 5. **修改** title 字符串里的 `—` 为 `-`（CP437 兼容）。注意：要修改的是新建 `SadConsoleRenderer.cs` 内复制过来的 title 字符串（旧 `Renderer.cs` 仍保留至 M5 才删，旧文件不必改动）。
 
 **预期输出**
@@ -173,7 +173,7 @@
 **验收**
 
 - `dotnet run` 弹窗显示完整一帧游戏画面：标题栏、地图（含玩家 `@`、怪物、物品、楼梯、墙壁）、状态栏、消息日志
-- 视觉等价测试：截图与旧版 console 输出对比，glyph 与配色一致（颜色可能因 RGB ↔ ANSI 终端配置略有色差，可接受）
+- 视觉等价测试：截图与旧版 console 输出对比，所有 glyph 字符与坐标位置一致；颜色允许因 RGB ↔ ANSI 终端 palette 差异略有偏移（不要求像素级一致，但每种颜色必须能与其他颜色在视觉上明确区分，例如 Goblin 绿与 Cyan 楼梯不可混淆）
 - FOV 正确：未探索区域空白，已探索未可见区域为灰色，可见区域为亮色
 - 关闭窗口后进程正常退出
 
@@ -271,16 +271,18 @@
    - `LogSurface`（60×3，坐标 (0,23)）
 2. **移植 overlay 屏幕**：
    - 创建 `InventoryScreen`、`HelpScreen`、`GameOverScreen`、`VictoryScreen`，每个为独立 `ScreenObject`
-   - 在 `RootScreen` 维护 `_currentOverlay` 引用；按 `i` 时把 root 的 children 切到 inventory（隐藏 game children）；Esc 切回
-   - Game over / Victory 由 `Game.Status` 触发：在 `RootScreen` 的 `Update(TimeSpan)` 检查 status，自动切到对应 overlay
+   - 在 `RootScreen` 维护 `_currentOverlay` 引用与 4 个 game 子 surface (`title`/`map`/`status`/`log`) 的引用列表
+   - **切屏机制**：按 `i` 时把 4 个 game 子 surface 的 `IsVisible = false` 并把 inventory overlay 加入 `RootScreen.Children`；overlay 内部 `ProcessKeyboard` 处理 `Esc` 键，触发 `RootScreen.CloseOverlay()` 把 game 子 surface 的 `IsVisible = true` 并 `Children.Remove(overlay)`
+   - **Help 同模式**：`?` 触发 `HelpScreen`，内部按任意键调 `CloseOverlay`
+   - **Game over / Victory 触发**：在 `RootScreen.Update(TimeSpan)` 内检查 `_game.Status`，若变为 `Dead` 或 `Won`，调用 `OpenOverlay(GameOverScreen / VictoryScreen)`；overlay 内按任意键调 `SadConsole.Game.Instance.MonoGameInstance.Exit()` 退出进程（不返回主屏）
 3. **细节迁移**：
-   - HP < 1/3 显示红色（已在 status 渲染逻辑里）
-   - Inventory 用 `1-9` 数字键选择物品 + Esc 退出（保留旧键位）
-   - 死亡 / 胜利屏后按任意键退出程序
+   - HP < `MaxHp / 3` 显示红色：从 M2 复制过来的 `SadConsoleRenderer.DrawStatusBar` 已包含此逻辑；M4 拆分到 `StatusSurface` 时保留同样规则
+   - Inventory 用 `1-9` 数字键选择物品（按 `1` 用 slot 0，按 `2` 用 slot 1...）+ Esc 退出（保留旧键位）；使用物品后调用 `_game.EndPlayerTurn()`（保留旧 `Program.cs` 的回合消耗语义）
+   - 死亡 / 胜利屏后按任意键退出程序（不回主菜单——本版本无主菜单）
 
 **预期输出**
 
-- 新文件：`src/UI/RootScreen.cs`、`src/UI/InventoryScreen.cs`、`src/UI/HelpScreen.cs`、`src/UI/GameOverScreen.cs`、`src/UI/VictoryScreen.cs`（或全部合到 `SadConsoleRenderer.cs` 一个文件，看代码量决定）
+- 新文件：`src/UI/RootScreen.cs`、`src/UI/InventoryScreen.cs`、`src/UI/HelpScreen.cs`、`src/UI/GameOverScreen.cs`、`src/UI/VictoryScreen.cs`（**默认每个 screen 一个文件**——便于独立调试；若任一 screen 实现少于 30 行可与同 namespace 的相邻 screen 合并，但 `RootScreen` 必须独立）
 - 修改：`Program.cs`、`SadConsoleRenderer.cs`、`SadConsoleKeyAdapter.cs`
 
 **验收**
