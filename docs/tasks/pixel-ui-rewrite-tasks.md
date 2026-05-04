@@ -154,7 +154,9 @@
 
 ### Task 7: 切 `Program.cs` 到事件驱动 + 窗口尺寸 60×26
 
-**Status:** TODO
+**Status:** DONE
+
+**Note:** Background run confirms the event-driven loop now stays alive past 4 seconds (exit code 143 from SIGTERM, no stderr) — previously M2/M4 builds returned `SadGame.Instance.Run()` immediately. The interactive acceptance points (WASD movement, combat, stair transitions, item pickup, `q` exits cleanly) DEFERRED — needs human visual verification (per custom instruction #3).
 
 **Depends on:** Task 6
 
