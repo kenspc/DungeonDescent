@@ -1,6 +1,5 @@
 using SadConsole;
 using SadConsole.Quick;
-using SadRogue.Primitives;
 using SadGame = SadConsole.Game;
 using SadConsoleConsole = SadConsole.Console;
 
@@ -9,8 +8,9 @@ Settings.WindowTitle = "Dungeon Descent";
 SadGame.Create(80, 30, (_, _) =>
 {
     var screen = new SadConsoleConsole(80, 30);
-    screen.Print(38, 14, "@", Color.Yellow);
-    screen.Print(30, 16, "Press any key to exit", Color.Gray);
+    var game = new DungeonDescent.Game();
+    DungeonDescent.SadConsoleRenderer.RenderAll(game, screen);
+
     screen.IsFocused = true;
     screen.WithKeyboard((_, _) =>
     {

@@ -76,7 +76,9 @@
 
 ### Task 4: 把 `Program.cs` 接通 `SadConsoleRenderer`
 
-**Status:** TODO
+**Status:** DONE
+
+**Note:** Visual acceptance (full game frame visible, FOV correct, color separation between Goblin green / stairs cyan, etc.) DEFERRED — needs human visual verification (per custom instruction #3).
 
 **Depends on:** Task 3
 
