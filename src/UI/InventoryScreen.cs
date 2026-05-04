@@ -10,7 +10,7 @@ class InventoryScreen : ScreenSurface
     private readonly Game _game;
     private readonly RootScreen _root;
 
-    public InventoryScreen(Game game, RootScreen root) : base(60, 26)
+    public InventoryScreen(Game game, RootScreen root) : base(Layout.WindowWidth, Layout.WindowHeight)
     {
         _game = game;
         _root = root;

@@ -12,7 +12,7 @@ class GameOverScreen : ScreenSurface
 {
     private bool _swallowFirstFrame = true;
 
-    public GameOverScreen(Game game) : base(60, 26)
+    public GameOverScreen(Game game) : base(Layout.WindowWidth, Layout.WindowHeight)
     {
         IsFocused   = true;
         UseKeyboard = true;

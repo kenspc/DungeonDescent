@@ -12,7 +12,7 @@ class VictoryScreen : ScreenSurface
 {
     private bool _swallowFirstFrame = true;
 
-    public VictoryScreen(Game game) : base(60, 26)
+    public VictoryScreen(Game game) : base(Layout.WindowWidth, Layout.WindowHeight)
     {
         IsFocused   = true;
         UseKeyboard = true;

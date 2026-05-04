@@ -23,10 +23,10 @@ class RootScreen : ScreenObject
     {
         _game = game;
 
-        _titleSurface  = new ScreenSurface(60, 1)  { Position = (0, 0) };
-        _mapSurface    = new ScreenSurface(60, 20) { Position = (0, 1) };
-        _statusSurface = new ScreenSurface(60, 2)  { Position = (0, 21) };
-        _logSurface    = new ScreenSurface(60, 3)  { Position = (0, 23) };
+        _titleSurface  = new ScreenSurface(Layout.WindowWidth, Layout.TitleHeight)  { Position = (0, Layout.TitleY) };
+        _mapSurface    = new ScreenSurface(Layout.WindowWidth, Layout.MapHeight)    { Position = (0, Layout.MapY) };
+        _statusSurface = new ScreenSurface(Layout.WindowWidth, Layout.StatusHeight) { Position = (0, Layout.StatusY) };
+        _logSurface    = new ScreenSurface(Layout.WindowWidth, Layout.LogHeight)    { Position = (0, Layout.LogY) };
 
         _gameSurfaces = new List<ScreenSurface>
         {

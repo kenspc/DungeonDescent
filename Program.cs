@@ -3,7 +3,7 @@ using SadGame = SadConsole.Game;
 
 Settings.WindowTitle = "Dungeon Descent";
 
-SadGame.Create(60, 26, (_, _) =>
+SadGame.Create(DungeonDescent.Layout.WindowWidth, DungeonDescent.Layout.WindowHeight, (_, _) =>
 {
     var game = new DungeonDescent.Game();
     var root = new DungeonDescent.RootScreen(game);

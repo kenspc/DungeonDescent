@@ -12,7 +12,7 @@ class HelpScreen : ScreenSurface
     // that opened the overlay isn't immediately consumed to close it.
     private bool _swallowFirstFrame = true;
 
-    public HelpScreen(RootScreen root) : base(60, 26)
+    public HelpScreen(RootScreen root) : base(Layout.WindowWidth, Layout.WindowHeight)
     {
         _root = root;
 
