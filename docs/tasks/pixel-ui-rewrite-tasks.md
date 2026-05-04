@@ -13,9 +13,11 @@
 
 ### Task 1: 接入 SadConsole NuGet 依赖
 
-**Status:** TODO
+**Status:** DONE
 
 在项目根目录执行 `dotnet add package SadConsole` 和 `dotnet add package SadConsole.Host.MonoGame`，确认 `DungeonDescent.csproj` 出现两个 `<PackageReference>`。运行 `dotnet build` 验证依赖链可解析。
+
+**Implementation note:** SadConsole.Host.MonoGame 10.9.0 不再 transitively 引入 MonoGame；package readme 明确要求使用方自行添加 MonoGame 引用。已额外添加 `MonoGame.Framework.DesktopGL 3.8.4.1`，使 `MonoGame.Framework.dll` + 各平台 SDL2/OpenAL native libs 落地到 `bin/Debug/net8.0/runtimes/*`。
 
 **Files:**
 - Modify: `DungeonDescent.csproj`
