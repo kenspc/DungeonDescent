@@ -261,7 +261,9 @@
 
 ### Task 11: `GameOverScreen` + `VictoryScreen` + Status 检测
 
-**Status:** TODO
+**Status:** DONE
+
+**Implementation note:** `RootScreen.Update(TimeSpan)` polls `_game.Status` each frame; when it transitions to `Dead` or `Won`, the matching end overlay is opened (replacing any current overlay). End screens treat any keypress as exit-process. Visual portion (death triggers GameOver with correct numbers, win triggers Victory, exit code 0 on key) DEFERRED — needs human visual verification.
 
 **Depends on:** Task 9
 

@@ -111,4 +111,33 @@ class RootScreen : ScreenObject
         SadConsoleRenderer.RenderStatus(_game, _statusSurface);
         SadConsoleRenderer.RenderLog(_game, _logSurface);
     }
+
+    public override void Update(TimeSpan delta)
+    {
+        // Auto-promote to GameOver / Victory overlay when the game state
+        // transitions out of Playing. Status is one-way (Dead/Won never
+        // revert), so once an end-screen is shown it stays for the rest
+        // of the process lifetime.
+        if (_game.Status == GameStatus.Dead && _currentOverlay is not GameOverScreen)
+        {
+            ReplaceOverlay(new GameOverScreen(_game));
+        }
+        else if (_game.Status == GameStatus.Won && _currentOverlay is not VictoryScreen)
+        {
+            ReplaceOverlay(new VictoryScreen(_game));
+        }
+
+        base.Update(delta);
+    }
+
+    private void ReplaceOverlay(ScreenObject overlay)
+    {
+        if (_currentOverlay != null)
+        {
+            Children.Remove(_currentOverlay);
+            _currentOverlay = null;
+        }
+
+        OpenOverlay(overlay);
+    }
 }
