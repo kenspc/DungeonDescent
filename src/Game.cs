@@ -16,10 +16,20 @@ class Game
 
     public Game()
     {
-        Map    = new Map(_rng.Next());
-        // Regenerate if map generation failed to produce rooms
-        while (Map.Rooms.Count < 2)
+        Map = new Map(_rng.Next());
+        // Regenerate if map generation failed to produce rooms. The
+        // attempt cap prevents an infinite loop in the unlikely case
+        // that the seed space cannot produce a usable layout.
+        const int MaxMapAttempts = 100;
+        int attempts = 1;
+        while (Map.Rooms.Count < 2 && attempts < MaxMapAttempts)
+        {
             Map = new Map(_rng.Next());
+            attempts++;
+        }
+        if (Map.Rooms.Count < 2)
+            throw new InvalidOperationException(
+                $"Failed to generate a map with at least two rooms after {MaxMapAttempts} attempts.");
         Player = new Player(Map.Rooms[0].Center);
         Map.UpdateFov(Player.Position);
         SpawnEntities();
@@ -147,6 +157,11 @@ class Game
                 AttackPlayer(m);
             else if (MonsterAt(next.Value) == null)
                 m.Position = next.Value;
+
+            // Stop the round as soon as the player falls so remaining
+            // monsters do not pile cosmetic "hits you for X damage" lines
+            // onto a corpse.
+            if (!Player.IsAlive) break;
         }
 
         Monsters.RemoveAll(m => !m.IsAlive);

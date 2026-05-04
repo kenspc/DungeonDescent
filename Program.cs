@@ -10,5 +10,14 @@ SadGame.Create(DungeonDescent.Layout.WindowWidth, DungeonDescent.Layout.WindowHe
     SadGame.Instance.Screen = root;
     SadGame.Instance.DestroyDefaultStartingConsole();
 });
-SadGame.Instance.Run();
-SadGame.Instance.Dispose();
+
+// try/finally guarantees Dispose runs even if Run throws, so SDL /
+// MonoGame native handles release before the process exits.
+try
+{
+    SadGame.Instance.Run();
+}
+finally
+{
+    SadGame.Instance.Dispose();
+}
