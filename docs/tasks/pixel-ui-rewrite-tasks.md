@@ -33,7 +33,9 @@
 
 ### Task 2: Walking Skeleton — 最小 SadConsole host
 
-**Status:** TODO
+**Status:** DONE
+
+**Implementation note:** SadConsole 10.9.0 不再提供 `Game.Instance.OnStart` 属性赋值的旧 API；改用 `Game.Create(width, height, EventHandler<GameHost> startingEventHandler)` 重载。键盘退出 hook 使用 `SadConsole.Quick.Keyboard.WithKeyboard` 扩展方法。`screen.IsFocused = true` 确保 hook 接收到按键。诊断运行显示 STARTUP → Before Run → OnStart fired → After Run → After Dispose 流程完整，进程 exit code 0、无 stderr。视觉部分（GUI 窗口出现 + 居中黄色 `@` + 灰色提示）DEFERRED — needs human visual verification（per custom instruction #3）。
 
 **Depends on:** Task 1
 
