@@ -6,6 +6,8 @@ namespace DungeonDescent;
 // Top-level ScreenObject for the running game. Hosts four child surfaces
 // (title, map, status, log) at fixed positions inside a 60x26 window, and
 // drives keyboard input through SadConsoleKeyAdapter into Game.HandleKey.
+// Overlays (inventory, help, end screens) replace the four surfaces
+// temporarily via OpenOverlay / CloseOverlay.
 class RootScreen : ScreenObject
 {
     private readonly Game _game;
@@ -13,6 +15,9 @@ class RootScreen : ScreenObject
     private readonly ScreenSurface _mapSurface;
     private readonly ScreenSurface _statusSurface;
     private readonly ScreenSurface _logSurface;
+    private readonly List<ScreenSurface> _gameSurfaces;
+
+    private ScreenObject? _currentOverlay;
 
     public RootScreen(Game game)
     {
@@ -23,13 +28,16 @@ class RootScreen : ScreenObject
         _statusSurface = new ScreenSurface(60, 2)  { Position = (0, 21) };
         _logSurface    = new ScreenSurface(60, 3)  { Position = (0, 23) };
 
-        Children.Add(_titleSurface);
-        Children.Add(_mapSurface);
-        Children.Add(_statusSurface);
-        Children.Add(_logSurface);
+        _gameSurfaces = new List<ScreenSurface>
+        {
+            _titleSurface, _mapSurface, _statusSurface, _logSurface,
+        };
 
-        // RootScreen owns the keyboard, not the children.
-        IsFocused = true;
+        foreach (var s in _gameSurfaces)
+            Children.Add(s);
+
+        // RootScreen owns the keyboard; surface children are draw-only.
+        IsFocused   = true;
         UseKeyboard = true;
 
         Refresh();
@@ -37,12 +45,21 @@ class RootScreen : ScreenObject
 
     public override bool ProcessKeyboard(Keyboard keyboard)
     {
+        // While an overlay is up, the overlay handles its own input.
+        if (_currentOverlay != null) return false;
+
         foreach (var key in keyboard.KeysPressed)
         {
             // Hard-wired quit so we still exit even if HandleKey ignores 'q'.
             if (key.Key == Keys.Q)
             {
                 SadConsole.Game.Instance.MonoGameInstance.Exit();
+                return true;
+            }
+
+            if (key.Key == Keys.I)
+            {
+                OpenOverlay(new InventoryScreen(_game, this));
                 return true;
             }
 
@@ -57,7 +74,30 @@ class RootScreen : ScreenObject
         return false;
     }
 
-    private void Refresh()
+    public void OpenOverlay(ScreenObject overlay)
+    {
+        foreach (var s in _gameSurfaces)
+            s.IsVisible = false;
+
+        Children.Add(overlay);
+        _currentOverlay = overlay;
+        overlay.IsFocused = true;
+    }
+
+    public void CloseOverlay()
+    {
+        if (_currentOverlay == null) return;
+
+        Children.Remove(_currentOverlay);
+        _currentOverlay = null;
+
+        foreach (var s in _gameSurfaces)
+            s.IsVisible = true;
+
+        IsFocused = true;
+    }
+
+    public void Refresh()
     {
         SadConsoleRenderer.RenderTitle(_game, _titleSurface);
         SadConsoleRenderer.RenderMap(_game, _mapSurface);

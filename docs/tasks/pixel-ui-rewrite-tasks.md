@@ -210,7 +210,9 @@
 
 ### Task 9: `InventoryScreen` + Overlay 切屏机制
 
-**Status:** TODO
+**Status:** DONE
+
+**Implementation note:** `RootScreen.ProcessKeyboard` short-circuits to `false` when an overlay is up, letting SadConsole route the input to the focused overlay child. `Inventory.Count > 0 && index < Inventory.Count` gates digit presses so empty / out-of-bounds slots don't burn a turn. Visual portion (overlay swap, HP red color when low, "(empty)" message, etc.) DEFERRED — needs human visual verification.
 
 **Depends on:** Task 8
 
