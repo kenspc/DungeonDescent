@@ -75,6 +75,15 @@ class Map
     // 5% mossy + 5% cracked) than corridors (~1% combined). Walls and stairs
     // are skipped because the loop continues on non-Floor cells. The shared
     // _rng makes the layout reproducible from the seed passed to Map(int).
+    //
+    // Thresholds are cumulative on a single roll: roll < Mossy gives mossy,
+    // Mossy <= roll < Cracked gives cracked, otherwise plain floor. Tune
+    // these constants only — do not duplicate magic numbers inline.
+    private const double RoomMossyChance     = 0.05;
+    private const double RoomCrackedChance   = 0.10;
+    private const double CorridorMossyChance   = 0.005;
+    private const double CorridorCrackedChance = 0.010;
+
     private void ScatterFloorVariants()
     {
         for (int y = 0; y < Height; y++)
@@ -83,16 +92,16 @@ class Map
             if (_tiles[x, y].Type != TileType.Floor) continue;
             var p = new Point(x, y);
             bool inRoom = Rooms.Any(r => r.Contains(p));
-            double r = _rng.NextDouble();
+            double roll = _rng.NextDouble();
             if (inRoom)
             {
-                if (r < 0.05)      _tiles[x, y].Type = TileType.FloorMossy;
-                else if (r < 0.10) _tiles[x, y].Type = TileType.FloorCracked;
+                if (roll < RoomMossyChance)        _tiles[x, y].Type = TileType.FloorMossy;
+                else if (roll < RoomCrackedChance) _tiles[x, y].Type = TileType.FloorCracked;
             }
             else
             {
-                if (r < 0.005)      _tiles[x, y].Type = TileType.FloorMossy;
-                else if (r < 0.010) _tiles[x, y].Type = TileType.FloorCracked;
+                if (roll < CorridorMossyChance)        _tiles[x, y].Type = TileType.FloorMossy;
+                else if (roll < CorridorCrackedChance) _tiles[x, y].Type = TileType.FloorCracked;
             }
         }
     }
