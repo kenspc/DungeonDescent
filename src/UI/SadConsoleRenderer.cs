@@ -60,15 +60,21 @@ static class SadConsoleRenderer
                     continue;
                 }
 
-                // Tile. Both switches enumerate every named TileType so that
-                // adding a new enum value triggers CS8509 (missing case)
-                // rather than silently rendering as a wall. CS8524 (warning
-                // about hypothetical out-of-range int casts to TileType) is
-                // suppressed locally because the only producer of TileType
-                // values is Map generation, which never invents unnamed
-                // values; we explicitly want to keep the `_ =>` arm absent
-                // so the CS8509 trip-wire remains armed for future enum
-                // growth.
+                // Tile. Both switches enumerate every named TileType so
+                // that adding a new enum value triggers CS8509 (non-
+                // exhaustive switch) — that is the trip-wire we want to
+                // keep armed, so we deliberately do NOT add a `_ =>` arm.
+                //
+                // CS8524 is a separate warning that fires *because* the
+                // switch lacks a default arm: it complains the switch
+                // does not handle hypothetical out-of-range integer
+                // values cast to TileType (e.g. `(TileType)99`). The
+                // only producer of TileType in this codebase is Map
+                // generation, which never invents unnamed values, so
+                // CS8524 is noise here and we suppress it locally. If
+                // an unnamed value ever does reach this switch, the
+                // generated code throws SwitchExpressionException at
+                // runtime — preferable to silently rendering as wall.
 #pragma warning disable CS8524
                 if (!tile.IsVisible)
                 {
@@ -113,7 +119,7 @@ static class SadConsoleRenderer
         // separators and abbreviated Gold/Score labels keep the worst-case
         // line under the 60-column surface width even at maxed-out values.
         int col = 0;
-        Color hpColor = p.Hp < p.MaxHp / 3 ? Palette.EffectPoison : Palette.EffectHealth;
+        Color hpColor = HpColorFor(p);
         col = PrintSegment(surface, col, 0, $"HP:{p.Hp}/{p.MaxHp}", hpColor);
         col = PrintSegment(surface, col, 0, " ", Palette.UiText);
         col = PrintSegment(surface, col, 0, $"ATK:{p.Attack}", Palette.UiAccent);
@@ -154,7 +160,7 @@ static class SadConsoleRenderer
         surface.Surface.Print(0, 0, "=== INVENTORY ===", Palette.UiTitle);
 
         var p = game.Player;
-        Color hpColor = p.Hp < p.MaxHp / 3 ? Palette.EffectPoison : Palette.EffectHealth;
+        Color hpColor = HpColorFor(p);
         int col = 0;
         col = PrintSegment(surface, col, 1, "HP: ", Palette.UiText);
         col = PrintSegment(surface, col, 1, $"{p.Hp}/{p.MaxHp}", hpColor);
@@ -248,4 +254,12 @@ static class SadConsoleRenderer
         surface.Surface.Print(col, row, text, color);
         return col + text.Length;
     }
+
+    // Single source of truth for the "HP looks dangerous" color cue. Below
+    // one third of MaxHp the HP readout flips from EffectHealth (green) to
+    // EffectPoison (yellow-green) — see Task 2's mapping note about the
+    // "low HP / danger" semantic borrowing the EffectPoison slot until a
+    // dedicated EffectDanger slot is introduced.
+    private static Color HpColorFor(Player p) =>
+        p.Hp < p.MaxHp / 3 ? Palette.EffectPoison : Palette.EffectHealth;
 }
