@@ -78,17 +78,21 @@ static class SadConsoleRenderer
 #pragma warning disable CS8524
                 if (!tile.IsVisible)
                 {
-                    // Remembered (out-of-FOV but explored) tile — keep the
-                    // hue, drop the brightness via Palette.Dim() so memory
-                    // tiles still convey type, not just "explored".
+                    // Remembered (out-of-FOV but explored) tile. Architecture
+                    // and stairs preserve hue via Palette.Dim() so memory
+                    // tiles still convey type. Decorative floor variants
+                    // (FloorMossy / FloorCracked) collapse to plain floor
+                    // here — the variant glyphs are noise once you can no
+                    // longer see them anyway, and hiding them in fog of war
+                    // tames the cumulative "many variants" perception (F2).
                     (Color color, char glyph) = tile.Type switch
                     {
-                        TileType.Wall         => (Palette.Dim(Palette.WallStone),    '#'),
-                        TileType.Floor        => (Palette.Dim(Palette.FloorBase),    '.'),
-                        TileType.FloorMossy   => (Palette.Dim(Palette.FloorMossy),   ','),
-                        TileType.FloorCracked => (Palette.Dim(Palette.FloorCracked), '\''),
-                        TileType.StairsDown   => (Palette.Dim(Palette.UiAccent),     '>'),
-                        TileType.StairsUp     => (Palette.Dim(Palette.UiAccent),     '<'),
+                        TileType.Wall         => (Palette.Dim(Palette.WallStone), '#'),
+                        TileType.Floor        => (Palette.Dim(Palette.FloorBase), '.'),
+                        TileType.FloorMossy   => (Palette.Dim(Palette.FloorBase), '.'),
+                        TileType.FloorCracked => (Palette.Dim(Palette.FloorBase), '.'),
+                        TileType.StairsDown   => (Palette.Dim(Palette.UiAccent),  '>'),
+                        TileType.StairsUp     => (Palette.Dim(Palette.UiAccent),  '<'),
                     };
                     surface.Surface.SetGlyph(x, y, glyph, color);
                 }
@@ -207,7 +211,7 @@ static class SadConsoleRenderer
         surface.Surface.Print(0, 7, "  Help      : ?",                  Palette.UiText);
         surface.Surface.Print(0, 8, "  Quit      : q",                  Palette.UiText);
         surface.Surface.Print(0, 10, "  Map symbols:",                  Palette.UiText);
-        surface.Surface.Print(0, 11, "    @ = You        # = Wall       . = Floor",         Palette.UiText);
+        surface.Surface.Print(0, 11, "    @ = You        # = Wall       . , ' = Floor",     Palette.UiText);
         surface.Surface.Print(0, 12, "    > = Stairs dn  < = Stairs up",                    Palette.UiText);
         surface.Surface.Print(0, 13, "    r = Rat        g = Goblin     T = Troll   D = Dragon", Palette.UiText);
         surface.Surface.Print(0, 14, "    ! = Potion     + = Sword      [ = Armor   $ = Gold",  Palette.UiText);

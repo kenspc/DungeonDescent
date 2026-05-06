@@ -71,16 +71,19 @@ class Map
     }
 
     // Sprinkle decorative floor variants ',' (mossy) and '\'' (cracked) over
-    // already-carved Floor tiles. Rooms get a higher density (~10% combined,
-    // 5% mossy + 5% cracked) than corridors (~1% combined). Walls and stairs
-    // are skipped because the loop continues on non-Floor cells. The shared
-    // _rng makes the layout reproducible from the seed passed to Map(int).
+    // already-carved Floor tiles. Rooms get a higher density (~5% combined,
+    // 2.5% mossy + 2.5% cracked) than corridors (~1% combined). Density was
+    // halved from the original 10% room rate after Task 6 manual review
+    // showed the variants were reading as "stuff" rather than as texture
+    // (F2 risk). Walls and stairs are skipped because the loop continues on
+    // non-Floor cells. The shared _rng makes the layout reproducible from
+    // the seed passed to Map(int).
     //
     // Thresholds are cumulative on a single roll: roll < Mossy gives mossy,
     // Mossy <= roll < Cracked gives cracked, otherwise plain floor. Tune
     // these constants only — do not duplicate magic numbers inline.
-    private const double RoomMossyChance     = 0.05;
-    private const double RoomCrackedChance   = 0.10;
+    private const double RoomMossyChance     = 0.025;
+    private const double RoomCrackedChance   = 0.05;
     private const double CorridorMossyChance   = 0.005;
     private const double CorridorCrackedChance = 0.010;
 

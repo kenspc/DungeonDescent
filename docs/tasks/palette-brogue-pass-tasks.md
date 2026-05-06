@@ -276,7 +276,9 @@ public Map(int seed)
 
 ### Task 6: 人工目视核查（manual, GUI required）
 
-**Status:** TODO
+**Status:** DONE
+
+**Implementation note:** 人工目视核查发现 F2 信号（玩家初见变种第一反应"那是什么"而非"地砖纹理"）。三处 calibration 调整：(1) `Map.cs` 房间 variant 密度从 10% 减半至 5%（`RoomMossyChance` 0.05→0.025、`RoomCrackedChance` 0.10→0.05；走廊 1% 不变）；(2) `SadConsoleRenderer.cs` remembered 分支让 `FloorMossy` / `FloorCracked` 统一塌陷为 `(Dim(FloorBase), '.')`，藏掉累积探索效应（玩家不再看到所有走过房间的 variant 堆积）；(3) Help legend `. = Floor` 改为 `. , ' = Floor`，显式告知三个 glyph 都是 floor。所有其他检查项（撞色、辨识、walkable / FOV 一致性、状态栏可读层次）通过。
 
 **Depends on:** Task 5
 
@@ -319,7 +321,7 @@ public Map(int seed)
 
 ### Task 7: F1-defensive commit + brief 引用
 
-**Status:** TODO
+**Status:** DONE
 
 **Depends on:** Task 6
 
