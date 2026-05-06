@@ -19,8 +19,17 @@ namespace DungeonDescent;
 //
 // Guardrails honored when picking RGB values:
 //   - FloorMossy / FloorCracked vs FloorBase: per-channel delta <= 30.
-//   - Critical semantic pairs kept >= 80 RGB distance (EntityPlayer vs other
-//     Entity*, EffectHealth vs EffectPoison, FloorMossy/Cracked vs Entity*).
+//   - Critical semantic pairs kept >= 80 RGB distance (Euclidean):
+//       * EntityPlayer vs other Entity*
+//       * EffectHealth vs EffectPoison
+//       * FloorMossy / FloorCracked vs every Entity*
+//
+// Note on variant hues: "mossy green" and "cracked tan" — the obvious
+// readings — collide with EntityHumanoid (olive) and EntityBeast (sandy
+// brown) inside the >=80 guardrail. Variants are therefore both pushed
+// into the cool blue / violet region. The character glyphs (',' vs '\'')
+// remain the primary differentiator between the two variants; their
+// chromatic difference is intentionally subtle.
 static class Palette
 {
     // ── Architecture (terrain) ────────────────────────────────────────────────
@@ -29,12 +38,15 @@ static class Palette
     // Brogue floorForeColor lit ~= mid grey (96, 96, 100). We brighten slightly
     // for SadConsole on black so floors read as walkable.
     public static readonly Color FloorBase     = new(120, 120, 130);
-    // FloorMossy: floorBase shifted toward Brogue's foliageColor green-gray.
-    // Channel deltas vs FloorBase: R-15, G+10, B-15 (each |d| <= 30).
-    public static readonly Color FloorMossy    = new(105, 130, 115);
-    // FloorCracked: floorBase shifted toward dry tan. Channel deltas: R+25,
-    // G+15, B-25 (each |d| <= 30).
-    public static readonly Color FloorCracked  = new(145, 135, 105);
+    // FloorMossy: cool damp blue-grey. Channel deltas vs FloorBase:
+    // R-25, G-5, B+20 (each |d| <= 30). Min Euclidean distance to any
+    // Entity* is ~89.6 (vs EntityHumanoid).
+    public static readonly Color FloorMossy    = new(95, 115, 150);
+    // FloorCracked: cool dusty violet. Channel deltas vs FloorBase:
+    // R-15, G-20, B+15 (each |d| <= 30). Min Euclidean distance to any
+    // Entity* is ~85.1 (vs EntityMagical). Visually similar to FloorMossy
+    // by design — see file header note; glyph carries the distinction.
+    public static readonly Color FloorCracked  = new(105, 100, 145);
 
     // ── Entity (creatures) ────────────────────────────────────────────────────
     // Brogue 1.7.5 src/brogue/Globals.c:playerInLightColor — pure white.
@@ -60,17 +72,23 @@ static class Palette
     // Brogue 1.7.5 yellow-ish gold ~ (220, 195, 90).
     public static readonly Color ItemTreasure   = new(220, 190, 90);
     // Staves / wands: pale magical cyan to separate from EntityMagical.
+    // RESERVED — no current consumer; kept to round out the 5x4 grid and to
+    // give a future staff/wand item a canonical slot.
     public static readonly Color ItemStaff      = new(150, 215, 220);
 
     // ── Effect (status / damage type) ─────────────────────────────────────────
-    // Brogue 1.7.5 src/brogue/Globals.c:redBar / healthColor — saturated green.
+    // Brogue 1.7.5 src/brogue/Globals.c:healthColor — saturated green used
+    // for the lit half of the HP bar (the redBar identifier in Brogue is
+    // misleading; it is colored green, not red).
     public static readonly Color EffectHealth = new(80, 200, 90);
     // Brogue poisonColor — toxic green-yellow. Distance from EffectHealth:
     // sqrt(110^2+0^2+10^2) ~= 110 (>=80).
     public static readonly Color EffectPoison = new(190, 200, 80);
     // Brogue fireForeColor — orange-red.
+    // RESERVED — no current consumer; kept for future fire/burn effect.
     public static readonly Color EffectFire   = new(230, 110, 50);
     // Brogue iceColor / coldColor — pale cyan.
+    // RESERVED — no current consumer; kept for future ice/freeze effect.
     public static readonly Color EffectIce    = new(170, 220, 240);
 
     // ── UiChrome (interface) ──────────────────────────────────────────────────
@@ -87,10 +105,13 @@ static class Palette
 
     // Returns a darkened copy of `c` by multiplying each channel by `factor`.
     // Default 0.4 = 60% darkening, suitable for remembered (out-of-FOV) tiles.
-    // Channels are clamped to [0, 255] defensively in case callers pass
-    // factor > 1.0 in the future.
+    // Negative / NaN factors are coerced to 0 so the result stays a valid
+    // (black) color rather than wrapping to 255 via the (int) cast or
+    // collapsing into nondeterministic output. Factors > 1 brighten, capped
+    // at 255 per channel by the Math.Clamp.
     public static Color Dim(Color c, float factor = 0.4f)
     {
+        if (float.IsNaN(factor) || factor < 0f) factor = 0f;
         int r = Math.Clamp((int)(c.R * factor), 0, 255);
         int g = Math.Clamp((int)(c.G * factor), 0, 255);
         int b = Math.Clamp((int)(c.B * factor), 0, 255);
