@@ -132,7 +132,7 @@ UiChrome:     UiTitle, UiText, UiAccent, UiDim
 
 ### Task 3: `TileType` enum 加入 `FloorMossy` 和 `FloorCracked`
 
-**Status:** TODO
+**Status:** DONE
 
 **Depends on:** Task 2
 

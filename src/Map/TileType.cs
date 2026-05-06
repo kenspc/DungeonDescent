@@ -1,3 +1,3 @@
 namespace DungeonDescent;
 
-enum TileType { Wall, Floor, StairsDown, StairsUp }
+enum TileType { Wall, Floor, FloorMossy, FloorCracked, StairsDown, StairsUp }
