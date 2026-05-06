@@ -59,7 +59,7 @@ UiChrome:     UiTitle, UiText, UiAccent, UiDim
 
 ### Task 2: Audit + 重新分配全部 72 处 `Palette.X` 引用
 
-**Status:** TODO
+**Status:** DONE
 
 **Depends on:** Task 1
 

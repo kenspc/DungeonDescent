@@ -15,7 +15,7 @@ class Player : Entity
     {
         Name     = "Hero";
         Glyph    = '@';
-        Color    = Palette.Yellow;
+        Color    = Palette.EntityPlayer;
         Position = start;
         MaxHp    = 100;
         Hp       = 100;

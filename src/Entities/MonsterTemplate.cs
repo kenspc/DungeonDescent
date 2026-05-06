@@ -16,11 +16,11 @@ record MonsterTemplate(
 static class MonsterTemplates
 {
     public static readonly MonsterTemplate Rat = new(
-        "Rat",    'r', Palette.Gray,    12,  4, 0,  5, 1);
+        "Rat",    'r', Palette.EntityBeast,    12,  4, 0,  5, 1);
     public static readonly MonsterTemplate Goblin = new(
-        "Goblin", 'g', Palette.Green,   25,  7, 1, 12, 1);
+        "Goblin", 'g', Palette.EntityHumanoid, 25,  7, 1, 12, 1);
     public static readonly MonsterTemplate Troll = new(
-        "Troll",  'T', Palette.DarkRed, 60, 10, 3, 30, 2);
+        "Troll",  'T', Palette.EntityHumanoid, 60, 10, 3, 30, 2);
     public static readonly MonsterTemplate Dragon = new(
-        "Dragon", 'D', Palette.Red,    150, 18, 5, 200, 1);
+        "Dragon", 'D', Palette.EntityMagical, 150, 18, 5, 200, 1);
 }

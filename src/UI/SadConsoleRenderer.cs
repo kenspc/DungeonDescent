@@ -17,7 +17,7 @@ static class SadConsoleRenderer
         string title = $" Dungeon Descent - Floor {game.Floor}/5 ";
         if (title.Length < Map.Width)
             title = title.PadRight(Map.Width);
-        surface.Surface.Print(0, 0, title, Palette.Yellow);
+        surface.Surface.Print(0, 0, title, Palette.UiTitle);
     }
 
     public static void RenderMap(Game game, IScreenSurface surface)
@@ -63,12 +63,16 @@ static class SadConsoleRenderer
                 // Tile
                 if (!tile.IsVisible)
                 {
+                    // Remembered (out-of-FOV but explored) tiles. Task 4 will
+                    // rewrite this branch to use Palette.Dim() per-glyph; for
+                    // now we keep all remembered tiles on UiDim as a stop-gap
+                    // so the build stays clean between Task 2 and Task 4.
                     (Color color, char glyph) = tile.Type switch
                     {
-                        TileType.Floor      => (Palette.Gray, '.'),
-                        TileType.StairsDown => (Palette.Gray, '>'),
-                        TileType.StairsUp   => (Palette.Gray, '<'),
-                        _                   => (Palette.Gray, '#'),
+                        TileType.Floor      => (Palette.UiDim, '.'),
+                        TileType.StairsDown => (Palette.UiDim, '>'),
+                        TileType.StairsUp   => (Palette.UiDim, '<'),
+                        _                   => (Palette.UiDim, '#'),
                     };
                     surface.Surface.SetGlyph(x, y, glyph, color);
                 }
@@ -76,10 +80,10 @@ static class SadConsoleRenderer
                 {
                     (Color color, char glyph) = tile.Type switch
                     {
-                        TileType.Floor      => (Palette.White, '.'),
-                        TileType.StairsDown => (Palette.Cyan,  '>'),
-                        TileType.StairsUp   => (Palette.Cyan,  '<'),
-                        _                   => (Palette.White, '#'),
+                        TileType.Floor      => (Palette.FloorBase, '.'),
+                        TileType.StairsDown => (Palette.UiAccent,  '>'),
+                        TileType.StairsUp   => (Palette.UiAccent,  '<'),
+                        _                   => (Palette.WallStone, '#'),
                     };
                     surface.Surface.SetGlyph(x, y, glyph, color);
                 }
@@ -96,26 +100,26 @@ static class SadConsoleRenderer
         // separators and abbreviated Gold/Score labels keep the worst-case
         // line under the 60-column surface width even at maxed-out values.
         int col = 0;
-        Color hpColor = p.Hp < p.MaxHp / 3 ? Palette.Red : Palette.Green;
+        Color hpColor = p.Hp < p.MaxHp / 3 ? Palette.EffectPoison : Palette.EffectHealth;
         col = PrintSegment(surface, col, 0, $"HP:{p.Hp}/{p.MaxHp}", hpColor);
-        col = PrintSegment(surface, col, 0, " ", Palette.White);
-        col = PrintSegment(surface, col, 0, $"ATK:{p.Attack}", Palette.Cyan);
-        col = PrintSegment(surface, col, 0, " ", Palette.White);
-        col = PrintSegment(surface, col, 0, $"DEF:{p.Defense}", Palette.Blue);
-        col = PrintSegment(surface, col, 0, " ", Palette.White);
-        col = PrintSegment(surface, col, 0, $"LV:{p.Level}", Palette.Magenta);
-        col = PrintSegment(surface, col, 0, " ", Palette.White);
-        col = PrintSegment(surface, col, 0, $"EXP:{p.Exp}/{p.ExpNext}", Palette.Yellow);
-        col = PrintSegment(surface, col, 0, " ", Palette.White);
-        col = PrintSegment(surface, col, 0, $"G:{p.Gold}", Palette.Yellow);
-        col = PrintSegment(surface, col, 0, " ", Palette.White);
-        PrintSegment(surface, col, 0, $"Sc:{p.Score}", Palette.White);
+        col = PrintSegment(surface, col, 0, " ", Palette.UiText);
+        col = PrintSegment(surface, col, 0, $"ATK:{p.Attack}", Palette.UiAccent);
+        col = PrintSegment(surface, col, 0, " ", Palette.UiText);
+        col = PrintSegment(surface, col, 0, $"DEF:{p.Defense}", Palette.UiAccent);
+        col = PrintSegment(surface, col, 0, " ", Palette.UiText);
+        col = PrintSegment(surface, col, 0, $"LV:{p.Level}", Palette.UiAccent);
+        col = PrintSegment(surface, col, 0, " ", Palette.UiText);
+        col = PrintSegment(surface, col, 0, $"EXP:{p.Exp}/{p.ExpNext}", Palette.UiAccent);
+        col = PrintSegment(surface, col, 0, " ", Palette.UiText);
+        col = PrintSegment(surface, col, 0, $"G:{p.Gold}", Palette.UiAccent);
+        col = PrintSegment(surface, col, 0, " ", Palette.UiText);
+        PrintSegment(surface, col, 0, $"Sc:{p.Score}", Palette.UiText);
 
         // Hint must fit the 60-column status surface; longer strings are
         // silently truncated by SadConsole's Print, hiding the trailing keys.
         surface.Surface.Print(0, 1,
             "[WASD] Move [>/<] Stairs [i] Inv [?] Help [.] Wait [q] Quit",
-            Palette.Gray);
+            Palette.UiDim);
     }
 
     public static void RenderLog(Game game, IScreenSurface surface)
@@ -125,7 +129,7 @@ static class SadConsoleRenderer
         for (int i = 0; i < MessageLog.Capacity; i++)
         {
             string text = i < lines.Count ? lines[i] : "";
-            surface.Surface.Print(0, i, text.PadRight(Map.Width), Palette.White);
+            surface.Surface.Print(0, i, text.PadRight(Map.Width), Palette.UiText);
         }
     }
 
@@ -134,20 +138,20 @@ static class SadConsoleRenderer
     public static void DrawInventory(Game game, IScreenSurface surface)
     {
         surface.Surface.Clear();
-        surface.Surface.Print(0, 0, "=== INVENTORY ===", Palette.Yellow);
+        surface.Surface.Print(0, 0, "=== INVENTORY ===", Palette.UiTitle);
 
         var p = game.Player;
-        Color hpColor = p.Hp < p.MaxHp / 3 ? Palette.Red : Palette.Green;
+        Color hpColor = p.Hp < p.MaxHp / 3 ? Palette.EffectPoison : Palette.EffectHealth;
         int col = 0;
-        col = PrintSegment(surface, col, 1, "HP: ", Palette.White);
+        col = PrintSegment(surface, col, 1, "HP: ", Palette.UiText);
         col = PrintSegment(surface, col, 1, $"{p.Hp}/{p.MaxHp}", hpColor);
-        PrintSegment(surface, col, 1, $"  Carry: {p.Inventory.Count}/{Player.MaxInventory}", Palette.White);
+        PrintSegment(surface, col, 1, $"  Carry: {p.Inventory.Count}/{Player.MaxInventory}", Palette.UiText);
 
         var inv = game.Player.Inventory;
         int promptRow;
         if (inv.Count == 0)
         {
-            surface.Surface.Print(0, 3, "(empty)", Palette.White);
+            surface.Surface.Print(0, 3, "(empty)", Palette.UiText);
             promptRow = 5;
         }
         else
@@ -157,9 +161,9 @@ static class SadConsoleRenderer
                 var item = inv[i];
                 int row = 3 + i;
                 int c = 0;
-                c = PrintSegment(surface, c, row, $"  [{i + 1}] ", Palette.White);
+                c = PrintSegment(surface, c, row, $"  [{i + 1}] ", Palette.UiText);
                 c = PrintSegment(surface, c, row, item.Glyph.ToString(), item.Color);
-                PrintSegment(surface, c, row, $" {item.Name}", Palette.White);
+                PrintSegment(surface, c, row, $" {item.Name}", Palette.UiText);
             }
             promptRow = 4 + inv.Count;
         }
@@ -169,26 +173,26 @@ static class SadConsoleRenderer
         string prompt = inv.Count == 0
             ? "Press [Esc] to cancel."
             : "Enter number to use item, or [Esc] to cancel:";
-        surface.Surface.Print(0, promptRow, prompt, Palette.White);
+        surface.Surface.Print(0, promptRow, prompt, Palette.UiText);
     }
 
     public static void DrawHelp(IScreenSurface surface)
     {
         surface.Surface.Clear();
-        surface.Surface.Print(0, 0, "=== HELP ===", Palette.Cyan);
-        surface.Surface.Print(0, 2, "  Movement  : WASD or Arrow Keys", Palette.White);
-        surface.Surface.Print(0, 3, "  Descend   : > (stand on >)",     Palette.White);
-        surface.Surface.Print(0, 4, "  Ascend    : < (stand on <)",     Palette.White);
-        surface.Surface.Print(0, 5, "  Wait      : . (pass turn)",      Palette.White);
-        surface.Surface.Print(0, 6, "  Inventory : i",                  Palette.White);
-        surface.Surface.Print(0, 7, "  Help      : ?",                  Palette.White);
-        surface.Surface.Print(0, 8, "  Quit      : q",                  Palette.White);
-        surface.Surface.Print(0, 10, "  Map symbols:",                  Palette.White);
-        surface.Surface.Print(0, 11, "    @ = You        # = Wall       . = Floor",         Palette.White);
-        surface.Surface.Print(0, 12, "    > = Stairs dn  < = Stairs up",                    Palette.White);
-        surface.Surface.Print(0, 13, "    r = Rat        g = Goblin     T = Troll   D = Dragon", Palette.White);
-        surface.Surface.Print(0, 14, "    ! = Potion     + = Sword      [ = Armor   $ = Gold",  Palette.White);
-        surface.Surface.Print(0, 16, "  Press any key to return...", Palette.Gray);
+        surface.Surface.Print(0, 0, "=== HELP ===", Palette.UiTitle);
+        surface.Surface.Print(0, 2, "  Movement  : WASD or Arrow Keys", Palette.UiText);
+        surface.Surface.Print(0, 3, "  Descend   : > (stand on >)",     Palette.UiText);
+        surface.Surface.Print(0, 4, "  Ascend    : < (stand on <)",     Palette.UiText);
+        surface.Surface.Print(0, 5, "  Wait      : . (pass turn)",      Palette.UiText);
+        surface.Surface.Print(0, 6, "  Inventory : i",                  Palette.UiText);
+        surface.Surface.Print(0, 7, "  Help      : ?",                  Palette.UiText);
+        surface.Surface.Print(0, 8, "  Quit      : q",                  Palette.UiText);
+        surface.Surface.Print(0, 10, "  Map symbols:",                  Palette.UiText);
+        surface.Surface.Print(0, 11, "    @ = You        # = Wall       . = Floor",         Palette.UiText);
+        surface.Surface.Print(0, 12, "    > = Stairs dn  < = Stairs up",                    Palette.UiText);
+        surface.Surface.Print(0, 13, "    r = Rat        g = Goblin     T = Troll   D = Dragon", Palette.UiText);
+        surface.Surface.Print(0, 14, "    ! = Potion     + = Sword      [ = Armor   $ = Gold",  Palette.UiText);
+        surface.Surface.Print(0, 16, "  Press any key to return...", Palette.UiDim);
     }
 
     public static void DrawGameOver(Game game, IScreenSurface surface)
@@ -199,14 +203,14 @@ static class SadConsoleRenderer
         const string banner = "==============================";
         const string title  = "          YOU DIED            ";
         int col = (Layout.WindowWidth - banner.Length) / 2;
-        surface.Surface.Print(col, 1, banner, Palette.Red);
-        surface.Surface.Print(col, 2, title,  Palette.Red);
-        surface.Surface.Print(col, 3, banner, Palette.Red);
-        surface.Surface.Print(col, 5, $"Floor reached : {game.Floor}",        Palette.White);
-        surface.Surface.Print(col, 6, $"Level         : {game.Player.Level}", Palette.White);
-        surface.Surface.Print(col, 7, $"Gold          : {game.Player.Gold}",  Palette.White);
-        surface.Surface.Print(col, 8, $"Final Score   : {game.Player.Score}", Palette.White);
-        surface.Surface.Print(col, 10, "Press any key to exit...", Palette.Gray);
+        surface.Surface.Print(col, 1, banner, Palette.EffectPoison);
+        surface.Surface.Print(col, 2, title,  Palette.EffectPoison);
+        surface.Surface.Print(col, 3, banner, Palette.EffectPoison);
+        surface.Surface.Print(col, 5, $"Floor reached : {game.Floor}",        Palette.UiText);
+        surface.Surface.Print(col, 6, $"Level         : {game.Player.Level}", Palette.UiText);
+        surface.Surface.Print(col, 7, $"Gold          : {game.Player.Gold}",  Palette.UiText);
+        surface.Surface.Print(col, 8, $"Final Score   : {game.Player.Score}", Palette.UiText);
+        surface.Surface.Print(col, 10, "Press any key to exit...", Palette.UiDim);
     }
 
     public static void DrawVictory(Game game, IScreenSurface surface)
@@ -215,13 +219,13 @@ static class SadConsoleRenderer
         const string banner = "==============================";
         const string title  = "    YOU ESCAPED THE DUNGEON!  ";
         int col = (Layout.WindowWidth - banner.Length) / 2;
-        surface.Surface.Print(col, 1, banner, Palette.Yellow);
-        surface.Surface.Print(col, 2, title,  Palette.Yellow);
-        surface.Surface.Print(col, 3, banner, Palette.Yellow);
-        surface.Surface.Print(col, 5, $"Level         : {game.Player.Level}", Palette.White);
-        surface.Surface.Print(col, 6, $"Gold          : {game.Player.Gold}",  Palette.White);
-        surface.Surface.Print(col, 7, $"Final Score   : {game.Player.Score}", Palette.White);
-        surface.Surface.Print(col, 9, "Press any key to exit...", Palette.Gray);
+        surface.Surface.Print(col, 1, banner, Palette.UiTitle);
+        surface.Surface.Print(col, 2, title,  Palette.UiTitle);
+        surface.Surface.Print(col, 3, banner, Palette.UiTitle);
+        surface.Surface.Print(col, 5, $"Level         : {game.Player.Level}", Palette.UiText);
+        surface.Surface.Print(col, 6, $"Gold          : {game.Player.Gold}",  Palette.UiText);
+        surface.Surface.Print(col, 7, $"Final Score   : {game.Player.Score}", Palette.UiText);
+        surface.Surface.Print(col, 9, "Press any key to exit...", Palette.UiDim);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

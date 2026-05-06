@@ -6,7 +6,7 @@ class Item
 {
     public string   Name     { get; set; } = "";
     public char     Glyph    { get; set; }
-    public Color    Color    { get; set; } = Palette.White;
+    public Color    Color    { get; set; } = Palette.UiText;
     public ItemType Type     { get; set; }
 
     public Func<Player, string> Apply { get; set; } = _ => "";
@@ -15,7 +15,7 @@ class Item
     {
         Name  = "Health Potion",
         Glyph = '!',
-        Color = Palette.Magenta,
+        Color = Palette.ItemConsumable,
         Type  = ItemType.Potion,
         Apply = p =>
         {
@@ -32,7 +32,7 @@ class Item
     {
         Name  = "Iron Sword",
         Glyph = '+',
-        Color = Palette.Cyan,
+        Color = Palette.ItemEquipment,
         Type  = ItemType.Sword,
         Apply = p =>
         {
@@ -45,7 +45,7 @@ class Item
     {
         Name  = "Leather Armor",
         Glyph = '[',
-        Color = Palette.Blue,
+        Color = Palette.ItemEquipment,
         Type  = ItemType.Armor,
         Apply = p =>
         {
@@ -58,7 +58,7 @@ class Item
     {
         Name  = $"{amount} Gold",
         Glyph = '$',
-        Color = Palette.Yellow,
+        Color = Palette.ItemTreasure,
         Type  = ItemType.Gold,
         Apply = p =>
         {

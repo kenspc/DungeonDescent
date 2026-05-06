@@ -7,7 +7,7 @@ abstract class Entity
     public Point Position { get; set; }
     public string Name    { get; init; } = "";
     public char   Glyph   { get; init; }
-    public Color  Color   { get; init; } = Palette.White;
+    public Color  Color   { get; init; } = Palette.UiText;
 
     public int Hp    { get; set; }
     public int MaxHp { get; set; }
