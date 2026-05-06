@@ -155,7 +155,7 @@ UiChrome:     UiTitle, UiText, UiAccent, UiDim
 
 ### Task 4: 渲染器两个 switch 改为 exhaustive + 用 `Palette.Dim()` 改记忆色
 
-**Status:** TODO
+**Status:** DONE
 
 **Depends on:** Task 3
 

@@ -60,19 +60,29 @@ static class SadConsoleRenderer
                     continue;
                 }
 
-                // Tile
+                // Tile. Both switches enumerate every named TileType so that
+                // adding a new enum value triggers CS8509 (missing case)
+                // rather than silently rendering as a wall. CS8524 (warning
+                // about hypothetical out-of-range int casts to TileType) is
+                // suppressed locally because the only producer of TileType
+                // values is Map generation, which never invents unnamed
+                // values; we explicitly want to keep the `_ =>` arm absent
+                // so the CS8509 trip-wire remains armed for future enum
+                // growth.
+#pragma warning disable CS8524
                 if (!tile.IsVisible)
                 {
-                    // Remembered (out-of-FOV but explored) tiles. Task 4 will
-                    // rewrite this branch to use Palette.Dim() per-glyph; for
-                    // now we keep all remembered tiles on UiDim as a stop-gap
-                    // so the build stays clean between Task 2 and Task 4.
+                    // Remembered (out-of-FOV but explored) tile — keep the
+                    // hue, drop the brightness via Palette.Dim() so memory
+                    // tiles still convey type, not just "explored".
                     (Color color, char glyph) = tile.Type switch
                     {
-                        TileType.Floor      => (Palette.UiDim, '.'),
-                        TileType.StairsDown => (Palette.UiDim, '>'),
-                        TileType.StairsUp   => (Palette.UiDim, '<'),
-                        _                   => (Palette.UiDim, '#'),
+                        TileType.Wall         => (Palette.Dim(Palette.WallStone),    '#'),
+                        TileType.Floor        => (Palette.Dim(Palette.FloorBase),    '.'),
+                        TileType.FloorMossy   => (Palette.Dim(Palette.FloorMossy),   ','),
+                        TileType.FloorCracked => (Palette.Dim(Palette.FloorCracked), '\''),
+                        TileType.StairsDown   => (Palette.Dim(Palette.UiAccent),     '>'),
+                        TileType.StairsUp     => (Palette.Dim(Palette.UiAccent),     '<'),
                     };
                     surface.Surface.SetGlyph(x, y, glyph, color);
                 }
@@ -80,13 +90,16 @@ static class SadConsoleRenderer
                 {
                     (Color color, char glyph) = tile.Type switch
                     {
-                        TileType.Floor      => (Palette.FloorBase, '.'),
-                        TileType.StairsDown => (Palette.UiAccent,  '>'),
-                        TileType.StairsUp   => (Palette.UiAccent,  '<'),
-                        _                   => (Palette.WallStone, '#'),
+                        TileType.Wall         => (Palette.WallStone,    '#'),
+                        TileType.Floor        => (Palette.FloorBase,    '.'),
+                        TileType.FloorMossy   => (Palette.FloorMossy,   ','),
+                        TileType.FloorCracked => (Palette.FloorCracked, '\''),
+                        TileType.StairsDown   => (Palette.UiAccent,     '>'),
+                        TileType.StairsUp     => (Palette.UiAccent,     '<'),
                     };
                     surface.Surface.SetGlyph(x, y, glyph, color);
                 }
+#pragma warning restore CS8524
             }
         }
     }
