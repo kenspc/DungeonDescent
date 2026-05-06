@@ -208,7 +208,7 @@ UiChrome:     UiTitle, UiText, UiAccent, UiDim
 
 ### Task 5: 在 `Map.cs` 加入 `ScatterFloorVariants()` 后处理
 
-**Status:** TODO
+**Status:** DONE
 
 **Depends on:** Task 4
 

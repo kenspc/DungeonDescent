@@ -21,6 +21,7 @@ class Map
         _rng = new Random(seed);
         Fill(TileType.Wall);
         GenerateRooms();
+        ScatterFloorVariants();
         PlaceStairs();
     }
 
@@ -67,6 +68,33 @@ class Map
         int dy = Math.Sign(b.Y - y);
         while (y != b.Y) { if (_tiles[x, y].Type == TileType.Wall) _tiles[x, y] = new Tile(TileType.Floor); y += dy; }
         _tiles[x, y] = new Tile(TileType.Floor);
+    }
+
+    // Sprinkle decorative floor variants ',' (mossy) and '\'' (cracked) over
+    // already-carved Floor tiles. Rooms get a higher density (~10% combined,
+    // 5% mossy + 5% cracked) than corridors (~1% combined). Walls and stairs
+    // are skipped because the loop continues on non-Floor cells. The shared
+    // _rng makes the layout reproducible from the seed passed to Map(int).
+    private void ScatterFloorVariants()
+    {
+        for (int y = 0; y < Height; y++)
+        for (int x = 0; x < Width;  x++)
+        {
+            if (_tiles[x, y].Type != TileType.Floor) continue;
+            var p = new Point(x, y);
+            bool inRoom = Rooms.Any(r => r.Contains(p));
+            double r = _rng.NextDouble();
+            if (inRoom)
+            {
+                if (r < 0.05)      _tiles[x, y].Type = TileType.FloorMossy;
+                else if (r < 0.10) _tiles[x, y].Type = TileType.FloorCracked;
+            }
+            else
+            {
+                if (r < 0.005)      _tiles[x, y].Type = TileType.FloorMossy;
+                else if (r < 0.010) _tiles[x, y].Type = TileType.FloorCracked;
+            }
+        }
     }
 
     private void PlaceStairs()
