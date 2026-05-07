@@ -2,7 +2,7 @@
 
 ## Objective
 
-把 SadConsole 当前使用的内置默认字体替换为采样自 Brogue 风的 16×16 像素字体（路径 B2：源 16×16 × `FontSize = 32`），让 60×26 cell grid 在 1920×832 物理窗口下渲染，作为视觉打磨的第二步落地。范围严格按 `docs/briefs/pixel-font-pass.md` Scope 段执行；本 plan 不重新议 Scope / Failure Modes / Hard Part。
+把 SadConsole 当前使用的内置默认字体替换为 Brogue-adjacent 风格的 16×16 像素字体（brief Hard Part #1 路径 B：第三方 OFL/MIT/BSD/ISC 公开像素字体；brief Hard Part #2 路径 B2：源 16×16 × cell 渲染尺寸 32×32），让 60×26 cell grid 在 1920×832 物理窗口下渲染，作为视觉打磨的第二步落地。范围严格按 `docs/briefs/pixel-font-pass.md` Scope 段执行；本 plan 不重新议 Scope / Failure Modes / Hard Part。
 
 **Not in scope of this plan**:
 - Scope / Failure Modes / Hard Part 的重新议——已在 brief 中固化。
@@ -68,6 +68,8 @@ foreach (var s in _gameSurfaces)
 ```
 
 物理窗口尺寸：`60 × 32 = 1920 wide`、`26 × 32 = 832 tall`。
+
+**实现路径与 brief 措辞差异**：brief Hard Part #2 路径 B2 写作 "SadConsole 全局 `SizeMultiple = 2`"。SadConsole 10.9 的等价 API 是按 surface 设 `FontSize`（`Point`）；二者效果等同（16×16 字形按 nearest-neighbor 渲染到 32×32 cell）。本 plan 选 per-surface `FontSize` 是因为 SadConsole 10.x 字体没有 `SizeMultiple` 全局开关——实测以 `IFont.Sizes.Two` 等 enum 或直接 `FontSize` 赋值为准。M2 第一步 Context7 验证若发现存在 `SizeMultiple` 全局开关，可改用全局开关减少代码改动；不影响最终视觉结果。
 
 **Overlay 字体继承**（OQ2 待 M2 验证）：当 default font 改了，新建的 ScreenSurface 是否自动继承？若不继承，M2 需逐 overlay（`InventoryScreen` / `HelpScreen` / `GameOverScreen` / `VictoryScreen`）显式设 `Font` + `FontSize`。
 
@@ -207,7 +209,7 @@ Brogue anchor（继承 brief F2）：
 - 每个被否决 candidate 的具体否决项（按 checklist 逐条标红）
 - 留作未来回看的审计轨迹
 
-**Escalation**（若 5 个 candidates 全否决）：
+**Escalation**（若 M3 选定的全部 candidates——3 至 5 个，视当时短名单大小——全否决）：
 - **第一选择**：扩大 candidate 池，回 M3。最多扩至 8 candidates。
 - **第二选择**：升级到 brief Hard Part #1 的 C 路径（自制 CP437 改型）— **要求重写本 plan**，不再走 M5。
 - **第三选择**：升级到路径 B1（源 32×32 字体）— **要求重写本 plan**，不再走 M5。
