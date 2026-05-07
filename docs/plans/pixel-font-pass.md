@@ -12,7 +12,7 @@
 
 - **上游 brief**：`docs/briefs/pixel-font-pass.md`（Cell 尺寸 32×32 / 路径 B2 / OFL-MIT-BSD-ISC license / Brogue anchor）。
 - **更上游 brief**：`docs/briefs/palette-brogue-pass.md`（视觉打磨 step 1 — 已落地，commits f95ae05 → e0119f5）；`docs/briefs/pixel-ui-rewrite.md`（视觉打磨 deferred 起源）。
-- **显示器前置（plan 阶段已确认）**：用户日常 2560×1440 + 可选外接 4K——1920×832 物理窗口在两种分辨率下均充裕，无 fallback 分支需要，brief Constraints 中的 24×24 退路本 plan 不启用。
+- **显示器前置（plan 阶段已确认）**：用户日常 2560×1440 + 可选外接 4K——1920×832 物理窗口在两种分辨率下均充裕，无 fallback 分支需要，brief Constraints 中的 24×24 退路本 plan 不启用。**例外触发条件**：若 M2 acceptance 实测窗口在 WSLg / 主机环境下因 DPI scaling 或窗口装饰开销实际不可用（标题栏被裁、内容超出屏幕、SDL 报错拒绝创建窗口），按 brief Constraints 的 24×24 fallback（路径 B3）重写本 plan 后再继续，不在本 plan 范围内偷偷换尺寸。
 - **F1 narrative discipline 跨 brief 继承**：本 plan 的所有 commit message / PR / 进度叙事必须显式说"step 2 of 3"——视觉打磨整体仍 incomplete（动画是 step 3）。tileset 永久搁置不计入步数。
 
 ## Technical Approach
@@ -86,6 +86,7 @@ foreach (var s in _gameSurfaces)
 - M3 每个 candidate 加载后截相同场景（同 floor seed、同玩家位置、同怪物物品分布）。
 - 对比窗口：`docs/screenshots/font-pass/before.png` vs `cand-<name>.png`。
 - **Variant audit 用 fixed map seed**：`Map` 已支持 seed 构造函数；M3 临时改 `Game.cs` 中 `new Map(_rng.Next())` 的 4 处调用为固定常量（dev-only，不向 main 推），确保 M1 与 M3 截图场景一致。Seed 数值文档化在 `docs/screenshots/font-pass/seed.txt`，**M5 清理时保留 seed.txt 文件**（不保留 `Game.cs` 代码改动），作为未来重做 audit 的复现凭据。
+- **截图工具**：Windows 主机直接跑 `dotnet run` 时用 Snipping Tool / Win+Shift+S 框选游戏窗口，导出 PNG 不缩放。WSL2 + WSLg 时 Win+Shift+S 同样能识别 WSLg 窗口；命令行替代为 `wsl.exe -e bash -c "..."` 不适用（无 X 截屏在 WSL 内部）。Linux 桌面用 `gnome-screenshot -w` 或 `flameshot gui`。无论何种工具：截图必须保存为 PNG，**不允许 JPEG**（lossy 压缩破坏像素 audit）。
 
 ## Implementation Steps
 
@@ -115,17 +116,34 @@ foreach (var s in _gameSurfaces)
    - 自定义字体加载后子 surface 的字体继承行为
    - 若任一假设错误，**先修订本 plan 的 Technical Approach 段**再继续。
 2. 选 placeholder 字体：**GNU Unifont 16×16**（OFL/GPL dual-licensed，刻意选风格不对的——避免心理上把 placeholder 当真 candidate）。
-3. 创建 `assets/fonts/unifont/` 目录，放置：
-   - `unifont.font`（SadConsole JSON descriptor）
+3. **生成 Unifont 16×16 PNG 字形表**：从 https://unifoundry.com/unifont/index.html 下载 `unifont-<version>.bdf`（或 `.hex`），用 `bdf2psf` / `bdftopcf` / 自写脚本提取 Basic Latin + Latin-1 + CP437 子集排成 16×16 cell 网格 PNG（约 256 字符 = 16×16 grid → 256×256 px PNG）。或直接用 SadConsole 社区已发布的 Unifont 16×16 改良 PNG（若可找到 OFL 兼容版本，记录来源 URL 到 README）。**接受失败**：若 1 小时内拼装不出可读 PNG，placeholder 改用 SadConsole 内置 `IBM_8x16_NoPadding`（直接复制其 `.font` + `.png` 出来作为 placeholder 资产路径），M2 目的"验证 pipeline"不变。
+4. 创建 `assets/fonts/unifont/` 目录，放置：
+   - `unifont.font`（SadConsole JSON descriptor，模板见下文 4a）
    - `unifont.png`（16×16 字形表，CP437/Latin-1 子集即可）
    - `LICENSE.txt`（GNU Unifont 完整 license 文本）
-4. 创建 `assets/fonts/README.md`，含 Unifont 条目。
-5. 修改 `DungeonDescent.csproj` 加 `<Content Include="assets/fonts/**/*.font;assets/fonts/**/*.png" CopyToOutputDirectory="PreserveNewest" />`。
-6. 修改 `Program.cs` 用 `SadGame.Create` 的 fontPath 重载注册 default font。
-7. 修改 `RootScreen.cs`，在 surface 创建后逐个设 `FontSize = new Point(32, 32)`：
+
+   **4a · `.font` JSON descriptor 模板**（基于 SadConsole 10.x 现有 IBM 字体格式，M2 第一步 Context7 验证；典型字段如下）：
+   ```json
+   {
+     "Name": "unifont",
+     "FilePath": "unifont.png",
+     "GlyphHeight": 16,
+     "GlyphWidth": 16,
+     "GlyphPadding": 0,
+     "Columns": 16,
+     "SolidGlyphIndex": 219,
+     "UnsupportedGlyphIndex": 0,
+     "IsSadFontFormat": true
+   }
+   ```
+   字段名以 Context7 查到的 10.9 schema 为准；若字段名变更，按查到的 schema 改本模板。
+5. 创建 `assets/fonts/README.md`，含 Unifont 条目。
+6. 修改 `DungeonDescent.csproj` 加 `<Content Include="assets/fonts/**/*.font;assets/fonts/**/*.png" CopyToOutputDirectory="PreserveNewest" />`。
+7. 修改 `Program.cs` 用 `SadGame.Create` 的 fontPath 重载注册 default font。
+8. 修改 `RootScreen.cs`，在 surface 创建后逐个设 `FontSize = new Point(32, 32)`：
    - `_titleSurface`, `_mapSurface`, `_statusSurface`, `_logSurface`
-8. 若 OQ2 验证表明 overlay 不继承，修改 `InventoryScreen` / `HelpScreen` / `GameOverScreen` / `VictoryScreen` 同等处理。
-9. `dotnet build && dotnet run`，玩到 floor 2，开 inventory + help overlay，触发 game over 或 victory（开 dev cheat 或自杀）。
+9. 若 OQ2 验证表明 overlay 不继承，修改 `InventoryScreen` / `HelpScreen` / `GameOverScreen` / `VictoryScreen` 同等处理。
+10. `dotnet build && dotnet run`，玩到 floor 2，开 inventory + help overlay，触发 game over 或 victory（玩到 HP=0 自然死亡或在 floor 5 拿到胜利物品；项目无内置 dev cheat，需手动达成）。
 
 **输入**：M1 完成。  
 **输出**：游戏可在 placeholder 字体 + 32×32 cell 下端到端运行。  
