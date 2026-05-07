@@ -105,7 +105,7 @@ foreach (var s in _gameSurfaces)
 **输出**：1 张 PNG 截图。  
 **Acceptance**：
 - 截图文件存在于指定路径
-- 包含上述 7 类可视元素（player / monster / item / FloorMossy / FloorCracked / StairsDown / status text / log text）
+- 包含上述 8 类可视元素（player / monster / item / FloorMossy / FloorCracked / StairsDown / status text / log text）
 - 截图分辨率约 480×416（默认字体 8×16 cell × 60×26 grid）
 - 文件 commit 进 git（与 plan 同步——审计材料）
 
@@ -118,7 +118,7 @@ foreach (var s in _gameSurfaces)
    - 自定义字体加载后子 surface 的字体继承行为
    - 若任一假设错误，**先修订本 plan 的 Technical Approach 段**再继续。
 2. 选 placeholder 字体：**GNU Unifont 16×16**（OFL/GPL dual-licensed，刻意选风格不对的——避免心理上把 placeholder 当真 candidate）。
-3. **生成 Unifont 16×16 PNG 字形表**：从 https://unifoundry.com/unifont/index.html 下载 `unifont-<version>.bdf`（或 `.hex`），用 `bdf2psf` / `bdftopcf` / 自写脚本提取 Basic Latin + Latin-1 + CP437 子集排成 16×16 cell 网格 PNG（约 256 字符 = 16×16 grid → 256×256 px PNG）。或直接用 SadConsole 社区已发布的 Unifont 16×16 改良 PNG（若可找到 OFL 兼容版本，记录来源 URL 到 README）。**接受失败**：若 1 小时内拼装不出可读 PNG，placeholder 改用 SadConsole 内置 `IBM_8x16_NoPadding`（直接复制其 `.font` + `.png` 出来作为 placeholder 资产路径），M2 目的"验证 pipeline"不变。
+3. **生成 Unifont 16×16 PNG 字形表**：从 https://unifoundry.com/unifont/index.html 下载 `unifont-<version>.bdf`（或 `.hex`），用 `bdf2psf` / `bdftopcf` / 自写脚本提取 Basic Latin + Latin-1 + CP437 子集排成 16×16 cell 网格 PNG（恰好 256 字符 = 16 列 × 16 行 → 256×256 px PNG）。或直接用 SadConsole 社区已发布的 Unifont 16×16 改良 PNG（若可找到 OFL 兼容版本，记录来源 URL 到 README）。**接受失败**：若 1 小时内拼装不出可读 PNG，placeholder 改用 SadConsole 内置 `IBM_8x16_NoPadding`（直接复制其 `.font` + `.png` 出来作为 placeholder 资产路径），M2 目的"验证 pipeline"不变。
 4. 创建 `assets/fonts/unifont/` 目录，放置：
    - `unifont.font`（SadConsole JSON descriptor，模板见下文 4a）
    - `unifont.png`（16×16 字形表，CP437/Latin-1 子集即可）
@@ -150,7 +150,7 @@ foreach (var s in _gameSurfaces)
 **输入**：M1 完成。  
 **输出**：游戏可在 placeholder 字体 + 32×32 cell 下端到端运行。  
 **Acceptance**：
-- 物理窗口实测 1920×832（用截图工具像素测量；WSLg HiDPI 下放宽，但 cell 内部 nearest-neighbor 必须可视为整数倍——见 R3）
+- 物理窗口实测 1920×832（用截图工具像素测量）。**WSLg HiDPI 放宽规则**：若 Windows 主机缩放（如 125% / 150%）导致 WSLg 报告窗口为 2400×1040 / 2880×1248 等非原生值，验证标准改为：单个 glyph 在屏幕上必须由整数 × 整数像素方块构成（无亚像素混合 / 无灰阶 anti-alias 漏出），用截图工具放大 4× 比对（任意单个 `@` 字形的边缘像素必须保持纯色边界，无中间灰阶）。见 R3。
 - 4 个 game surface（title / map / status / log）+ 4 个 overlay（inventory / help / game over / victory）全部以 32×32 cell 渲染，无 cell 尺寸不一致
 - Status 行 60 列文字未被裁剪：`HP:NN/NN ATK:NN DEF:NN LV:N EXP:NN/NN G:NNN Sc:NNNN` 完整可见
 - 完整玩到 floor 2 不崩；从 status 触发 inventory + help + game over + victory 任一 overlay 不崩
