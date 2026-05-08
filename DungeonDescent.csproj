@@ -11,4 +11,7 @@
     <PackageReference Include="SadConsole" Version="10.9.0" />
     <PackageReference Include="SadConsole.Host.MonoGame" Version="10.9.0" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="assets/fonts/**/*.font;assets/fonts/**/*.png" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

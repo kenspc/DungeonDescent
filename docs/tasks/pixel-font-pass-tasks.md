@@ -90,7 +90,11 @@ Source the GNU Unifont 16×16 glyph data, build a 256×256 px PNG glyph table (1
 
 ### Task 4: Rewrite Program.cs to Builder pattern + load placeholder font (M2 steps 6, 7, 10)
 
-**Status:** TODO
+**Status:** IN PROGRESS
+
+**Code change completed (Task 4a, 2026-05-08):** csproj content include + Program.cs Builder rewrite landed. `dotnet build` succeeds with **0 warnings, 0 errors**. Assets verified copied to `bin/Debug/net8.0/assets/fonts/unifont/{unifont.font,unifont.png}`. `SetScreenSize` was replaced with `SetWindowSizeInCells` after first build flagged the former as `[Obsolete]` in 10.9.
+
+**Runtime verification pending (Task 4b):** acceptance items below that require launching the GUI (1920×832 physical window, single-`@` 4× pixel-edge audit, surface alignment, status row visibility, floor 1→2 playthrough, inventory/help overlay open without crash) cannot be performed by an automated agent — needs the user to run `dotnet run` and validate visually. This task remains **IN PROGRESS** until that runtime check passes; only then does it move to DONE.
 
 **Depends on:** Task 3
 
