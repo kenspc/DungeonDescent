@@ -1,0 +1,13 @@
+{
+  "$type": "SadConsole.SadFont, SadConsole",
+  "Name": "px437-ibm-vga",
+  "FilePath": "px437-ibm-vga.png",
+  "GlyphHeight": 16,
+  "GlyphWidth": 16,
+  "GlyphPadding": 0,
+  "Columns": 16,
+  "Rows": 16,
+  "SolidGlyphIndex": 219,
+  "UnsupportedGlyphIndex": 0,
+  "IsSadExtended": false
+}

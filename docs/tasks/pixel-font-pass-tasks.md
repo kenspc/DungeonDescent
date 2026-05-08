@@ -150,9 +150,21 @@ Add the assets/fonts content include to the csproj, then **rewrite `Program.cs` 
 
 ### Task 6: Source and install 3-5 candidate fonts (M3 steps 1-2)
 
-**Status:** TODO
+**Status:** DONE
 
-**Depends on:** Task 5
+**Completed:** 2026-05-08. Installed **4 candidates** (within plan's 3-5 range):
+- `unifont` (OFL-1.1 + GPLv2 dual; already on disk from Task 3, re-cast as M3 candidate in addition to placeholder role)
+- `px437-ibm-vga` (CC BY-SA 4.0; int10h Px437_IBM_VGA_8x16-2x rendered at 16-pt via Pillow)
+- `px437-nec-apc3` (CC BY-SA 4.0; int10h Px437_NEC_APC3_8x16-2x; same rendering pipeline)
+- `px437-fmtowns-re` (CC BY-SA 4.0; int10h Px437_FMTowns_re_8x16-2x; same rendering pipeline)
+
+**License decision (option C, 2026-05-08):** user accepted CC BY-SA 4.0 candidates under the rationale that the project is currently hobby + non-distributing, where attribution + ShareAlike obligations do not trigger. Decision logged in `assets/fonts/README.md` License notes.
+
+**Build verification:** `dotnet build` succeeded with 0 warnings, 0 errors. All 4 candidate font directories copied to `bin/Debug/net8.0/assets/fonts/`. Runtime rendering verification deferred to Task 7 (which cycles through each candidate during screenshot capture).
+
+**Side note:** `Px437_IBM_BIOS-2x` was tried first as a 4th non-Unifont candidate but its native grid is not 8×16 (likely 8×14 or 9×16), giving garbage glyphs at 16-pt rendering. Swapped for `Px437_NEC_APC3_8x16-2x` which has explicit 8×16 native size and rendered cleanly. Lesson noted in `assets/fonts/README.md` asset generation section.
+
+**Depends on:** Task 5 (which is SKIPPED — Task 6 effectively depends on Task 4)
 
 Research and select 3-5 candidate fonts meeting all of: (a) source 16×16 monospace bitmap pixel font, (b) license is OFL / MIT / BSD / ISC (or trigger explicit license-list extension review per plan R6), (c) Brogue-adjacent thick-stroke style, (d) full CP437 or Latin-1 glyph coverage. Sourcing leads: int10h.org Oldschool PC Fonts (VileR), GNU Unifont (already installed in Task 3), MxPlus IBM series, Press Start 2P 16×16 variants, Cherry / Curses-style fonts. For each selected candidate, create the same 3-file asset bundle as Task 3 and add a row to the assets-fonts README.
 
