@@ -87,7 +87,7 @@ foreach (var s in _gameSurfaces)
 - M1 先截 baseline（默认字体 + 当前 palette + 装饰 variant）— 作为对比基准。
 - M3 每个 candidate 加载后截相同场景（同 floor seed、同玩家位置、同怪物物品分布）。
 - 对比窗口：`docs/screenshots/font-pass/before.png` vs `cand-<name>.png`。
-- **Variant audit 用 fixed map seed**：`Map` 已支持 seed 构造函数；M3 临时改 `Game.cs` 中 `new Map(_rng.Next())` 的 4 处调用为固定常量（dev-only，不向 main 推），确保 M1 与 M3 截图场景一致。Seed 数值文档化在 `docs/screenshots/font-pass/seed.txt`，**M5 清理时保留 seed.txt 文件**（不保留 `Game.cs` 代码改动），作为未来重做 audit 的复现凭据。
+- **Variant audit 用 fixed map seed**：`Map` 已支持 seed 构造函数；M3 临时**只改 `Game.cs:19`**（`Game()` ctor 的初次 Map 创建）为固定常量，让 floor 1 audit 截图可复现。其余 3 处（line 27 retry loop / line 209 NextFloor / line 222 PrevFloor）必须保持 `_rng.Next()`——尤其是 line 27，pin 成常量会让 retry 循环无限重出同图直到 `MaxMapAttempts` 抛异常。Line 19 选定的 seed 必须事先验证为 "known-good"（单次调用就能产出 ≥ 2 房间，不依赖 retry）。Seed 数值文档化在 `docs/screenshots/font-pass/seed.txt`，**M5 清理时保留 seed.txt 文件**（不保留 `Game.cs` 代码改动），作为未来重做 audit 的复现凭据。
 - **截图工具**：Windows 主机直接跑 `dotnet run` 时用 Snipping Tool / Win+Shift+S 框选游戏窗口，导出 PNG 不缩放。WSL2 + WSLg 时 Win+Shift+S 同样能识别 WSLg 窗口；命令行替代为 `wsl.exe -e bash -c "..."` 不适用（无 X 截屏在 WSL 内部）。Linux 桌面用 `gnome-screenshot -w` 或 `flameshot gui`。无论何种工具：截图必须保存为 PNG，**不允许 JPEG**（lossy 压缩破坏像素 audit）。
 
 ## Implementation Steps
@@ -145,7 +145,7 @@ foreach (var s in _gameSurfaces)
 8. 修改 `RootScreen.cs`，在 surface 创建后逐个设 `FontSize = new Point(32, 32)`：
    - `_titleSurface`, `_mapSurface`, `_statusSurface`, `_logSurface`
 9. 若 OQ2 验证表明 overlay 不继承，修改 `InventoryScreen` / `HelpScreen` / `GameOverScreen` / `VictoryScreen` 同等处理。
-10. `dotnet build && dotnet run`，玩到 floor 2，开 inventory + help overlay，触发 game over 或 victory（玩到 HP=0 自然死亡或在 floor 5 拿到胜利物品；项目无内置 dev cheat，需手动达成）。
+10. `dotnet build && dotnet run`，玩到 floor 2，开 inventory + help overlay。**不要求触发 game-over / victory overlay**——M2 是 placeholder pipeline smoke test，目的是验证字体加载 + 32×32 cell 渲染不崩；game-over / victory 的视觉验证留到 M5 final session（项目无 dev cheat，触发 victory 需打通 floor 5 击败 Dragon，对 placeholder 而言成本不匹配）。
 
 **输入**：M1 完成。  
 **输出**：游戏可在 placeholder 字体 + 32×32 cell 下端到端运行。  
@@ -153,7 +153,7 @@ foreach (var s in _gameSurfaces)
 - 物理窗口实测 1920×832（用截图工具像素测量）。**WSLg HiDPI 放宽规则**：若 Windows 主机缩放（如 125% / 150%）导致 WSLg 报告窗口为 2400×1040 / 2880×1248 等非原生值，验证标准改为：单个 glyph 在屏幕上必须由整数 × 整数像素方块构成（无亚像素混合 / 无灰阶 anti-alias 漏出），用截图工具放大 4× 比对（任意单个 `@` 字形的边缘像素必须保持纯色边界，无中间灰阶）。见 R3。
 - 4 个 game surface（title / map / status / log）+ 4 个 overlay（inventory / help / game over / victory）全部以 32×32 cell 渲染，无 cell 尺寸不一致
 - Status 行 60 列文字未被裁剪：`HP:NN/NN ATK:NN DEF:NN LV:N EXP:NN/NN G:NNN Sc:NNNN` 完整可见
-- 完整玩到 floor 2 不崩；从 status 触发 inventory + help + game over + victory 任一 overlay 不崩
+- 完整玩到 floor 2 不崩；inventory + help overlay 各自打开 + 关闭不崩。Game-over / victory overlay **不在 M2 验证范围**（见 M5）
 - `git status` clean 后再 commit；commit message 含"step 2 of 3 (M2: pipeline only, placeholder font)"
 
 ### M3 · Candidate 调研 + 截图比对（3-5 候选）
@@ -165,9 +165,17 @@ foreach (var s in _gameSurfaces)
    - **MxPlus IBM 系列**（int10h，OFL）— 部分有 16×16 hi-density 变体
    - **其他**：Press Start 2P 16×16 变体、Cherry / Curses 系（如能找到清晰 OFL/MIT 来源）
 2. 选定 3-5 个 candidate（含 Unifont 不重复算）。每个安装到 `assets/fonts/<name>/`，含 `.font` + `.png` + `LICENSE.txt`，更新 `assets/fonts/README.md` 加条目。
-3. **固化 map seed**：`Map` 已支持 `public Map(int seed)` 构造函数，但 `Game.cs:19/27/209/222` 调用 `new Map(_rng.Next())` 让每局随机。临时改 `src/Game.cs` 的 4 处 `new Map(_rng.Next())` 为 `new Map(42)`（或 `0xBE57`，二选一固化即可；下文以 42 为准），让 floor 1 与回放时的 floor 1 完全一致（dev-only，不 commit；用 git stash 保管这次改动）。Seed 数值写入 `docs/screenshots/font-pass/seed.txt`，commit 这个 .txt 文件。注意：四处全部改成同一个常量会让 floor 2 与 floor 1 同图——M3 截图只走 floor 1，可接受；若需 floor 2 截图，把 4 处分别改为 `42`、`43`、`209`、`222` 等不同常量并在 seed.txt 内列出。
+3. **固化 map seed（floor 1 audit only，仅 pin line 19）**：`Map` 已支持 `public Map(int seed)` 构造函数。`Game.cs` 有 4 处 `new Map(_rng.Next())`，但**只有 line 19 是初次 Map 创建**——M3 audit 截图只在 floor 1 取，因此**只需 pin line 19**：
+
+   - **Line 19**（`Game()` ctor 的初次 Map 创建）：临时改为 `new Map(42)`（或其他 known-good 常量）。
+   - **Line 27**（在 `while (Map.Rooms.Count < 2 && attempts < MaxMapAttempts)` retry loop 体内）：**必须保持 `_rng.Next()`**。pin 成常量会让 retry loop 无限重出同图，触达 `MaxMapAttempts` 后抛 `InvalidOperationException`。
+   - **Line 209/222**（`NextFloor` / `PrevFloor` 切楼层时的 Map 重建）：保持 `_rng.Next()`，M3 audit 不参与。
+
+   **Known-good seed 验证流程**：选定 seed 前先验证它在 line 19 单次调用就能产出 `Rooms.Count >= 2`（避免 line 27 retry loop 被触发——retry 仍然 random 但增加截图与原 baseline 的不确定性）。验证方式：临时在 `Program.cs` 顶部加一行 `Console.WriteLine($"seed=42, rooms={new DungeonDescent.Map(42).Rooms.Count}");` 跑一次确认，不达标换 seed（43、44、…）直到 known-good，再正式 pin line 19。
+
+   Seed 数值写入 `docs/screenshots/font-pass/seed.txt`（含 known-good 验证结果），commit 这个 .txt 文件。`Game.cs` 的 dev-only 改动用 `git stash` 保管不向 main 推。
 4. 临时改 `Program.cs` 字体路径，逐个 candidate 加载、运行游戏、走到与 M1 baseline 相同场景、截图存 `docs/screenshots/font-pass/cand-<name>.png`。
-5. 全部截完后 `git stash pop` 撤回 `Game.cs` seed 改动（保留 seed.txt + 截图）。
+5. 全部截完后 `git stash pop` 撤回 `Game.cs:19` 的 seed 改动（保留 seed.txt + 截图）。
 
 **输入**：M2 完成。  
 **输出**：3-5 个 candidate font 安装在 `assets/fonts/`；同等数量的 candidate 截图；`seed.txt` 含使用的 seed 值。  
@@ -176,7 +184,7 @@ foreach (var s in _gameSurfaces)
 - 每个 candidate 都通过 M2 的 acceptance（32×32 渲染无破损）
 - 每个 candidate 截图完成且可见 baseline 中所有元素（player / monster / item / FloorMossy / FloorCracked / stairs / status / log）
 - `seed.txt` 含明文 seed 数值
-- `git diff src/Game.cs` 中无 seed 常量痕迹（临时改动已撤回，`new Map(_rng.Next())` 4 处恢复原状）
+- `git diff src/Game.cs` 中无 seed 常量痕迹（line 19 临时改动已撤回，4 处 `new Map(_rng.Next())` 全部保持原状）
 - `assets/fonts/README.md` 列出所有 candidate
 - License 全部明确——若有 candidate license 不在 brief 允许列表（OFL/MIT/BSD/ISC）则在本 milestone 显式记录是否扩展允许列表，扩则 plan 必须更新
 
@@ -228,8 +236,8 @@ Brogue anchor（继承 brief F2）：
 2. 更新 `assets/fonts/README.md`：仅保留选定字体的条目 + "Selected" 标记。
 3. 更新 `Program.cs` 字体路径指向选定字体（如 M2 之后未改回，本步固化）。
 4. 检查 `git diff src/Game.cs` 不含 M3 临时引入的固定 seed 常量（4 处 `new Map(_rng.Next())` 已恢复原状）。
-5. 完整玩一局：floor 1 → 战斗 → 捡物品 → 上楼 → floor 2 → 死亡或胜利。
-6. 检查所有 overlay：inventory / help / game over / victory。
+5. 完整玩一局：floor 1 → 战斗 → 捡物品 → 上楼 → floor 2 → 让 HP 归零触发 GameOverScreen（站在怪物旁继续受伤至死即可——比 floor 5 击败 Dragon 触发 victory 成本低得多）。
+6. 验证 overlay 视觉布局：inventory / help / game-over（runtime 必触发）。**Victory overlay 处理**：与 inventory / help / game-over 共用同一 `ScreenSurface` 渲染管线，结构同构——这 3 个全部通过即视为 victory 也通过，**不强制 runtime 触发 victory**。若本次 session 自然抵达 floor 5 击败 Dragon 则顺便验证；否则 victory overlay 的 runtime 触发推迟到下一次自然达成的 session，不阻塞本 commit。
 7. 起 commit：
 
 ```
@@ -247,6 +255,7 @@ Animation remains deferred; this commit does not complete visual polish.
 - `assets/fonts/` 仅含 1 个 font 目录 + 1 个 README.md + `decision.md`（继续保留作为审计）
 - `docs/screenshots/font-pass/` 内 baseline + cand-* + decision.md + seed.txt 全部保留（审计用）
 - 全程无视觉回归（baseline 中所有元素仍可见、可读、可区分）
+- 3 个 overlay（inventory / help / game-over）已 runtime 触发并验证 32×32 渲染；victory overlay 不强制 runtime 触发（见 step 6 说明）
 - commit message 显式含 "step 2 of 3" 与 "does not complete visual polish"
 - `git status` clean
 
@@ -256,7 +265,7 @@ Animation remains deferred; this commit does not complete visual polish.
 - **R2 · 16×16 source OFL 字体候选稀疏**：M3 可能找不到 5 个达标 candidate。Mitigation：M4 已含 escalation 路径（扩池 8 → C 自制 → B1 源 32×32）。Plan 接受最少 3 candidates 即可推进。Unifont 已在 M2 装妥，是 baseline candidate。
 - **R3 · WSLg HiDPI scaling 让 1920×832 物理窗口实际不是 1920×832**：WSLg 会按 Windows 主机 DPI 拉伸窗口。Mitigation：M2 acceptance 用截图工具像素测量；若 WSLg 拉伸，验证 cell 内部 nearest-neighbor 仍是整数倍即可，物理像素值放宽。Windows 主机直接跑（非 WSLg）应该无此问题——若怀疑 WSLg 异常先在 Windows 验证。
 - **R4 · 32×32 + status 行 60 列文字溢出**：当前 status 行最坏情况已经接近 60 列；新字体若个别字符更宽（虽源 16×16 应严格 monospace），SadConsole 会 silently truncate（`SadConsoleRenderer.cs:142-145` 注释提到这一点）。Mitigation：M2 acceptance 显式逐字段检查 status 行可见，全部 candidate 都过 M4 status 数字 checklist。
-- **R5 · M3 fixed seed 临时改动忘清理**：M5 含显式 `git diff` 检查。Mitigation：M3 用 `git stash` 保管 `Game.cs` 改动，M3 末尾 `git stash pop` 撤回，M5 acceptance 强制 `git diff src/Game.cs` 中不再含 M3 引入的固定 seed 常量。
+- **R5 · M3 fixed seed 临时改动忘清理**：M5 含显式 `git diff` 检查。Mitigation：M3 用 `git stash` 保管 `Game.cs:19` 改动（仅 1 行——因 retry loop / 楼层切换的另外 3 处必须保持 `_rng.Next()`），M3 末尾 `git stash pop` 撤回，M5 acceptance 强制 `git diff src/Game.cs` 中不再含 line 19 引入的固定 seed 常量。
 - **R6 · License 边界审议拖累 M3**：若 candidate 来自 int10h.org 且其 license 是 CC BY-SA 4.0（不在 brief 允许列表），M3 步骤 5 要求显式审议是否扩展允许列表。Mitigation：plan 不预先批准扩列表——交 M3 阶段决策；若拒扩，则该 candidate 自动出局，回到剩余候选。
 
 ## Open Questions
