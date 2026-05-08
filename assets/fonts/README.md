@@ -2,6 +2,10 @@
 
 This directory holds custom pixel fonts loaded by `Program.cs` via SadConsole's `Builder.ConfigureFonts((cfg, _) => cfg.UseCustomFont(path))`.
 
+## Selected (M4): `px437-fmtowns-re`
+
+Decided 2026-05-08 after structured 11-item readability audit. Full rationale + per-candidate audit log: `docs/screenshots/font-pass/decision.md`. Runner-up `px437-ibm-vga` remains documented as fallback. Other candidates will be removed in Task 9 cleanup.
+
 ## Candidates (M3 short list, 4 fonts)
 
 | Font name           | Source URL                                             | License                                            | Designer / Maintainer                       | Role                                                                  | Native size | Cell size after 16-pt rendering |

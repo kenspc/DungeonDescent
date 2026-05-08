@@ -228,7 +228,11 @@ Temporarily pin **only** `src/Game.cs:19` (the `Game()` ctor's initial Map creat
 
 ### Task 8: Run readability audit + select font + write decision.md (M4)
 
-**Status:** TODO
+**Status:** DONE
+
+**Completed:** 2026-05-08. User confirmed `px437-fmtowns-re` after Claude's structured 11-item checklist audit of the 4 cand-* screenshots from Task 7. None of the 4 candidates triggered M4 escalation; selection was a positive choice rather than fallback. Rationale: FMTowns has the boldest stroke (best matches Brogue's 厚实 anchor), most blocky `@` (most iconic player icon), and bolder status digits than other candidates. Runner-up `px437-ibm-vga` documented as M5 fallback if FMTowns surfaces unforeseen long-session issues. Rejected: `unifont` (half-width ASCII violates anchor), `px437-nec-apc3` (`@` hood decoration + thinnest strokes).
+
+Audit artifacts: `docs/screenshots/font-pass/decision.md`. README header at `assets/fonts/README.md` updated with `Selected: px437-fmtowns-re`.
 
 **Depends on:** Task 7
 
