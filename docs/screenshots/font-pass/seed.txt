@@ -1,0 +1,21 @@
+Task 7 audit seed: 42
+
+Verified known-good 2026-05-08 via:
+    dotnet run -- --probe-seed 42
+    seed=42, Rooms.Count=10
+
+Rooms.Count >= 2 confirms Game.cs:19 single-call construction succeeds without
+entering the line-25/line-27 retry loop. Therefore pinning only line 19 to
+Map(42) leaves the retry loop's _rng.Next() effectively unused — line 27 stays
+random in source but never executes during audit runs.
+
+Other probed seeds (also known-good, kept here as fallback if 42 produces
+visually unfortunate map shape during candidate audit):
+    43 -> 11 rooms
+    44 -> 8 rooms
+    100 -> 9 rooms
+
+Pinned in Game.cs:19 only (lines 27, 209, 222 must keep _rng.Next() per
+plan M3 step 3 + sadconsole-api-notes.md). Pin reverted before committing
+the candidate screenshots; this seed.txt is committed as audit record so
+the audit can be reproduced in the future without re-deriving the seed.

@@ -189,7 +189,21 @@ Research and select 3-5 candidate fonts meeting all of: (a) source 16×16 monosp
 
 ### Task 7: Pin map seed, capture candidate screenshots, restore seed (M3 steps 3-5)
 
-**Status:** TODO
+**Status:** DONE
+
+**Completed:** 2026-05-08. Streamlined via permanent CLI flag enhancement (Program.cs `--font` + `--probe-seed` flags landed in commit `b212dab`) — eliminates the per-candidate `Program.cs` edit cycle (4 edits → 0 edits).
+
+Audit seed: **42** (Rooms.Count=10, verified known-good via `dotnet run -- --probe-seed 42`; line-19 pinning skips line-27 retry loop entirely). Pin applied to `src/Game.cs:19` only (per plan M3 step 3); lines 27/209/222 left at `_rng.Next()`.
+
+Captured 4 candidate screenshots at ~1920×832 px (Snipping Tool framing precision ±2 px):
+- `cand-unifont.png`           (1920×832, 29 KB)
+- `cand-px437-ibm-vga.png`     (1919×831, 34 KB)
+- `cand-px437-nec-apc3.png`    (1918×831, 31 KB)
+- `cand-px437-fmtowns-re.png`  (1918×831, 33 KB)
+
+Pin reverted post-capture; `git diff src/Game.cs` is empty before commit. `seed.txt` retained as audit reproducibility record.
+
+Single-screenshot-per-candidate strategy adopted (vs Task 1's variants/combat/stairs split): the candidate audit is comparing **font rendering** of the same map terrain across the 4 candidates, not testing visibility coverage of all 8 element types per candidate. With seed=42 pinned, every screenshot shows the same map shape; element coverage is satisfied collectively across baselines + candidates.
 
 **Depends on:** Task 6
 
