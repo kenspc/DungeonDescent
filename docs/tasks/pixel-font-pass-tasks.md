@@ -65,7 +65,9 @@ Plan updates landed in Technical Approach + M2 steps 1/4a/7/8/9, R1, OQ1, OQ2. S
 
 ### Task 3: Build Unifont placeholder font asset (M2 steps 2-5)
 
-**Status:** TODO
+**Status:** DONE
+
+**Completed:** 2026-05-08. Generated 256×256 px Unifont 16×16 PNG by extracting 16 horizontal codepoint strips from `unifont-16.0.04.bmp` (U+0000..U+00FF) at BMP offsets x=32+i*256, y=64, then stacking vertically with ImageMagick `-append`. Source BMP from <https://unifoundry.com/pub/unifont/unifont-16.0.04/unifont-16.0.04.bmp>. Verified codepoint 0x40 ('@') sits at row 4 col 0 (linear index 0x40) per SadConsole convention. License downloaded from <https://unifoundry.com/LICENSE.txt> (OFL-1.1 + GPLv2-with-font-exception dual; OFL sublicense honored). PNG is 1-bit white-on-black (negated from Unifont's black-on-white source per SadConsole convention). Asset generation rationale and CP437/SolidGlyphIndex caveats documented in `assets/fonts/README.md`. **Did not need the IBM 8×16 fallback** — full Unifont path completed within ~30 min.
 
 **Depends on:** Task 2
 
