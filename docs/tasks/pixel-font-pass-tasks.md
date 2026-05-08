@@ -111,8 +111,6 @@ Side observations:
 
 **Depends on:** Task 3
 
-**Depends on:** Task 3
-
 Add the assets/fonts content include to the csproj, then **rewrite `Program.cs` to use SadConsole 10.x Builder pattern** with `.ConfigureFonts((cfg, _) => cfg.UseCustomFont(...))` to load the placeholder font and `.SetDefaultFontSize(IFont.Sizes.Two)` to upscale to 32×32 cells globally. The existing `try/finally Dispose` structure is preserved. **No `RootScreen.cs` modification is needed** — surfaces inherit font + size at construction. Run the game to confirm end-to-end correctness — game plays through floor 2 without crashing, overlays open without crashing, status text fits.
 
 **Files to create or modify:**
