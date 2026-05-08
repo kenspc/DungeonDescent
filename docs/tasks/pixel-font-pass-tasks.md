@@ -256,7 +256,26 @@ For each candidate from Task 6, evaluate the screenshots from Task 7 against the
 
 ### Task 9: Cleanup unused candidates + final play-test + commit (M5)
 
-**Status:** TODO
+**Status:** DONE
+
+**Completed:** 2026-05-08. Step 2 of 3 milestone closed.
+
+Cleanup (auto):
+- `Program.cs` default font path: `assets/fonts/unifont/unifont.font` → `assets/fonts/px437-fmtowns-re/px437-fmtowns-re.font`
+- Deleted 3 rejected candidate directories: `assets/fonts/{unifont,px437-ibm-vga,px437-nec-apc3}/` (9 files total)
+- `assets/fonts/README.md` rewritten to focus on selected font (license, asset generation, .font schema reference)
+- Verified `git diff src/Game.cs` is empty before commit (Task 7 seed pin properly reverted; all 4 `new Map(_rng.Next())` sites preserved)
+- `dotnet build` final: 0 warnings, 0 errors
+
+Final play-test (user, 2026-05-08): all 4 acceptance items confirmed PASS:
+1. Floor 1 → combat → item pickup → stairs descent → floor 2 ✓
+2. `i` inventory overlay opens at 32×32, closes cleanly ✓
+3. `?` help overlay opens at 32×32, closes cleanly ✓
+4. Game-over overlay triggered (HP→0) at 32×32 ✓
+
+Victory overlay not runtime-triggered per plan M5 step 6 — structural equivalence with inventory/help/game-over (all 4 inherit ScreenSurface, render via same path) accepted as pass-by-equivalence.
+
+**Step 2 of 3 visual-polish work complete.** Animation (step 3) remains deferred. Tileset permanently shelved per upstream brief anchor decision.
 
 **Depends on:** Task 8
 

@@ -1,45 +1,35 @@
 # Fonts
 
-This directory holds custom pixel fonts loaded by `Program.cs` via SadConsole's `Builder.ConfigureFonts((cfg, _) => cfg.UseCustomFont(path))`.
+This directory holds the custom pixel font loaded by `Program.cs` via SadConsole's `Builder.ConfigureFonts((cfg, _) => cfg.UseCustomFont(path))`.
 
-## Selected (M4): `px437-fmtowns-re`
+## Selected font: `px437-fmtowns-re`
 
-Decided 2026-05-08 after structured 11-item readability audit. Full rationale + per-candidate audit log: `docs/screenshots/font-pass/decision.md`. Runner-up `px437-ibm-vga` remains documented as fallback. Other candidates will be removed in Task 9 cleanup.
+| Field      | Value                                                              |
+|------------|--------------------------------------------------------------------|
+| Source URL | <https://int10h.org/oldschool-pc-fonts/fontlist/>                  |
+| TTF source | int10h pack v2.2 — `Px437_FMTowns_re_8x16-2x.ttf`                   |
+| License    | CC BY-SA 4.0                                                       |
+| Designer   | VileR @ int10h.org (recreation of Fujitsu FM Towns workstation BIOS font) |
+| Cell size  | 16×16 source × `IFont.Sizes.Two` = 32×32 cell at runtime           |
 
-## Candidates (M3 short list, 4 fonts)
-
-| Font name           | Source URL                                             | License                                            | Designer / Maintainer                       | Role                                                                  | Native size | Cell size after 16-pt rendering |
-|---------------------|--------------------------------------------------------|----------------------------------------------------|---------------------------------------------|-----------------------------------------------------------------------|-------------|---------------------------------|
-| `unifont`           | <https://unifoundry.com/unifont/index.html>            | OFL-1.1 + GPLv2-with-font-exception (dual)         | Roman Czyborra et al. (Unifoundry / GNU)    | M2 placeholder; M3 candidate (will be evaluated then likely rejected) | 16×16       | 16×16 (half-width ASCII)        |
-| `px437-ibm-vga`     | <https://int10h.org/oldschool-pc-fonts/fontlist/>      | CC BY-SA 4.0                                       | VileR @ int10h.org                          | M3 candidate                                                          | 8×16 ×2     | 16×16 (full-width)              |
-| `px437-nec-apc3`    | <https://int10h.org/oldschool-pc-fonts/fontlist/>      | CC BY-SA 4.0                                       | VileR @ int10h.org                          | M3 candidate                                                          | 8×16 ×2     | 16×16 (full-width)              |
-| `px437-fmtowns-re`  | <https://int10h.org/oldschool-pc-fonts/fontlist/>      | CC BY-SA 4.0                                       | VileR @ int10h.org                          | M3 candidate                                                          | 8×16 ×2     | 16×16 (full-width)              |
+Selected 2026-05-08 after the M3/M4 audit. Full audit log + per-candidate rejection reasons: `docs/screenshots/font-pass/decision.md`. Fallback path documented there if FMTowns surfaces unforeseen long-session issues post-M5.
 
 ## License notes
 
-- **Unifont** is dual-licensed under OFL-1.1 and GPLv2 with font exception. We honor the OFL-1.1 sublicense, which matches the brief's original allow-list (OFL / MIT / BSD / ISC).
-- **px437-* (int10h.org)** are licensed under CC BY-SA 4.0. The plan brief originally called for OFL/MIT/BSD/ISC only, but the user adopted **option C (2026-05-08)**: at the current hobby + non-distributing project stage, CC BY-SA 4.0 imposes no obligations (attribution + ShareAlike kick in only on redistribution). The decision to either keep or replace these fonts is deferred until the project actually ships. If/when the project starts being distributed publicly, attribution must be added (typically a "Fonts" credits screen or `CREDITS.md`) and ShareAlike must be considered for any derivative works.
-- License full text for each font is in `<font-name>/LICENSE.txt`.
+`px437-fmtowns-re` is licensed under CC BY-SA 4.0 (full text in `px437-fmtowns-re/LICENSE.txt`). The brief originally allowed only OFL / MIT / BSD / ISC, but the user adopted **option C (2026-05-08)**: at the current hobby + non-distributing project stage, CC BY-SA 4.0 imposes no obligations (attribution + ShareAlike kick in only on redistribution). If/when the project starts being distributed publicly, attribution must be added (typically a "Fonts" credits screen or `CREDITS.md`) and ShareAlike must be considered for any derivative works. Re-evaluating this decision is a one-line `Program.cs` font-path edit + asset swap if a stricter license is needed.
 
 ## Asset generation
 
-### `unifont` (placeholder + candidate)
-
-Generated 2026-05-08 from `unifont-16.0.04.bmp` (downloaded from Unifoundry on the same day). Extracted 16 horizontal strips of 256 px × 16 px each from BMP plane row 0 (codepoints U+0000-U+00FF) at offsets `x=32+i*256, y=64`, then negated (Unifont is black-on-white, SadConsole expects white-on-black) and stacked vertically with `convert -append`. Glyphs are Unifont's 8×16 half-width designs left-aligned in 16×16 cells — the unfilled right half of each cell is the visual cue that this is a placeholder, not a real candidate.
-
-### `px437-*` (int10h candidates)
-
-Generated 2026-05-08 by rendering int10h's "Px (pixel outline)" TTF series at 16-point Pillow `ImageFont.truetype` with `mode="1"` 1-bit canvas (no anti-aliasing). For each codepoint 0x00-0xFF, `Draw.text` paints the glyph at position `(col*16, row*16)` where `col = codepoint % 16, row = codepoint // 16`. The Px series TTFs are int10h's pixel-outline rendering specifically designed to render exactly at certain point sizes, and 16-pt matches the `8x16-2x` doubled native size. `IBM_BIOS-2x` was tried initially but gave garbage at 16-pt (BIOS variant is not native 8×16 — likely 8×14 or 9×16); replaced with NEC APC3 8x16-2x which renders cleanly. Source TTFs from `oldschool_pc_font_pack_v2.2_FULL.zip`.
-
-The Python rendering script is in the project's git history (commits referencing `render_font.py`); the script is not committed — it was a one-off tool.
-
-## SolidGlyphIndex
-
-All four `.font` files declare `SolidGlyphIndex: 219` (CP437 convention for ▓). Behavior:
-
-- **`unifont`**: codepoint 219 maps to U+00DB ("Û"); SadConsole solid-fill operations would render Û glyphs (none observed in current Dungeon Descent UI surfaces).
-- **`px437-*`**: codepoint 219 is properly the CP437 ▓ medium-shade block — fills work as expected.
+Generated 2026-05-08 by rendering `Px437_FMTowns_re_8x16-2x.ttf` (from int10h pack `oldschool_pc_font_pack_v2.2_FULL.zip`) at 16-pt Pillow `ImageFont.truetype` with `mode="1"` 1-bit canvas (no anti-aliasing). For each codepoint 0x00-0xFF, `Draw.text` paints the glyph at position `(col*16, row*16)` where `col = codepoint % 16, row = codepoint // 16` — matching SadConsole's linear-cell-index addressing. The Px series TTFs are int10h's pixel-outline rendering specifically designed to render exactly at certain point sizes; 16-pt matches the `8x16-2x` doubled native size.
 
 ## SadConsole 10.x .font JSON schema
 
-All four `.font` files include the **`$type` Newtonsoft.Json discriminator** (`"SadConsole.SadFont, SadConsole"`) as the first key. Without this, `GameHost.LoadFont` throws `JsonSerializationException: Could not create an instance of type SadConsole.IFont. Type is an interface or abstract class and cannot be instantiated.` This requirement was missed by the XML-doc-based schema verification in Task 2 and discovered at runtime in Task 4b — the canonical `.font` template now carries this field. See `docs/screenshots/font-pass/sadconsole-api-notes.md` Assumption D for full citation.
+`px437-fmtowns-re.font` includes the **`$type` Newtonsoft.Json discriminator** (`"SadConsole.SadFont, SadConsole"`) as the first key. Without this, `GameHost.LoadFont` throws `JsonSerializationException`. See `docs/screenshots/font-pass/sadconsole-api-notes.md` Assumption D for full citation.
+
+## Adding more fonts later (e.g., for a future visual-polish iteration)
+
+1. Render TTF (or other source) to a 256×256 PNG glyph table at 16×16 per cell
+2. Author `<name>.font` JSON using the canonical template (see `sadconsole-api-notes.md` Assumption D)
+3. Drop the font's `LICENSE.txt` into `<name>/`
+4. Update this README with a new row
+5. Either (a) point `Program.cs:string defaultFont` at the new font, or (b) use the `--font` CLI flag for ad-hoc testing without committing

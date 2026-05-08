@@ -13,7 +13,7 @@ using SadGame = SadConsole.Game;
 //                                                  exits — for verifying that
 //                                                  a seed is "known-good"
 //                                                  before pinning Game.cs:19)
-string defaultFont = "assets/fonts/unifont/unifont.font";
+string defaultFont = "assets/fonts/px437-fmtowns-re/px437-fmtowns-re.font";
 string fontPath = defaultFont;
 int? probeSeed = null;
 
