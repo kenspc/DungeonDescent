@@ -90,11 +90,26 @@ Source the GNU Unifont 16×16 glyph data, build a 256×256 px PNG glyph table (1
 
 ### Task 4: Rewrite Program.cs to Builder pattern + load placeholder font (M2 steps 6, 7, 10)
 
-**Status:** IN PROGRESS
+**Status:** DONE
 
-**Code change completed (Task 4a, 2026-05-08):** csproj content include + Program.cs Builder rewrite landed. `dotnet build` succeeds with **0 warnings, 0 errors**. Assets verified copied to `bin/Debug/net8.0/assets/fonts/unifont/{unifont.font,unifont.png}`. `SetScreenSize` was replaced with `SetWindowSizeInCells` after first build flagged the former as `[Obsolete]` in 10.9.
+**Completed:** 2026-05-08. Two phases:
 
-**Runtime verification pending (Task 4b):** acceptance items below that require launching the GUI (1920×832 physical window, single-`@` 4× pixel-edge audit, surface alignment, status row visibility, floor 1→2 playthrough, inventory/help overlay open without crash) cannot be performed by an automated agent — needs the user to run `dotnet run` and validate visually. This task remains **IN PROGRESS** until that runtime check passes; only then does it move to DONE.
+**Task 4a (code, 2026-05-08):** csproj content include + Program.cs Builder rewrite landed. `SetScreenSize` was replaced with `SetWindowSizeInCells` after first build flagged the former as `[Obsolete]` in 10.9. Final build: 0 warnings, 0 errors. A separate fix commit (`4933469`) added the `$type` Newtonsoft.Json discriminator to `unifont.font` after Task 4b runtime surfaced a JSON deserialization error — Task 2's XML-doc-based schema verification missed this metadata key; downstream propagated to plan template + notes file.
+
+**Task 4b (runtime, user, 2026-05-08):** all 6 acceptance items confirmed PASS by user-run `dotnet run` session:
+1. Physical window ≈ 1920×832 ✓
+2. `@` glyph 4× zoom: pixel edges pure-color, no AA grays (nearest-neighbor 2× upscale verified)
+3. All 4 game surfaces (title / map / status / log) at 32×32 cell, no mismatch
+4. Status row `HP:96/110 ATK:9 DEF:2 LV:2 EXP:5/40 G:0 Sc:25` fully visible (`Sc:` not truncated; ~45/60 cells used)
+5. Floor 1 → floor 2 traversal works without crash
+6. `i` opens inventory + `?` opens help overlay, both at 32×32 cell, no crash
+
+Side observations:
+- Predicted SolidGlyphIndex=219 → "Û" fill cosmetic NOT triggered in any visible surface — moot for placeholder pipeline test.
+- ASCII chars are 8×16 left-aligned in 16×16 cells (Unifont half-width design); reads as wide-spaced text. Acceptable placeholder cosmetic per brief F2 anchor-misalignment intent.
+- Variant `,` `'` rendering preserved through font swap — palette-brogue-pass step 1 work has no regression.
+
+**Depends on:** Task 3
 
 **Depends on:** Task 3
 
