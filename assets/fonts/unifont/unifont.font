@@ -1,4 +1,5 @@
 {
+  "$type": "SadConsole.SadFont, SadConsole",
   "Name": "unifont",
   "FilePath": "unifont.png",
   "GlyphHeight": 16,

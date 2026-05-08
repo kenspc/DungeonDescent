@@ -97,6 +97,7 @@ SadConsole.Game.Instance.Dispose();
 
 | Field name              | XML line | Type      | Notes                                            |
 |-------------------------|----------|-----------|--------------------------------------------------|
+| `$type`                 | (runtime) | string  | **Newtonsoft.Json `$type` discriminator — REQUIRED.** Value: `"SadConsole.SadFont, SadConsole"`. Without it, `GameHost.LoadFont` throws `JsonSerializationException: Could not create an instance of type SadConsole.IFont. Type is an interface or abstract class and cannot be instantiated.` (Discovered runtime in Task 4b initial run, 2026-05-08; XML doc does not document this since it is a JSON-level deserialization concern, not a property of `SadFont`.) |
 | `Name`                  | 9794     | string    | font display name                                |
 | `FilePath`              | 9797     | string    | PNG path relative to .font file                  |
 | `GlyphHeight`           | 9802     | int       | glyph cell height in source pixels               |
@@ -108,7 +109,23 @@ SadConsole.Game.Instance.Dispose();
 | `UnsupportedGlyphIndex` | 9813     | int       | typically 0 or 219                               |
 | `IsSadExtended`         | 9826     | bool      | **NOT `IsSadFontFormat`** (plan template error)  |
 
-**Plan impact:** the `.font` JSON template in plan M2 step 4a needs `IsSadFontFormat` → `IsSadExtended`. All other fields stay.
+**Plan impact:** the `.font` JSON template in plan M2 step 4a needs (1) the `$type` discriminator added as the first key, and (2) `IsSadFontFormat` → `IsSadExtended`. All other fields stay. The canonical minimal `.font` is:
+
+```json
+{
+  "$type": "SadConsole.SadFont, SadConsole",
+  "Name": "<name>",
+  "FilePath": "<name>.png",
+  "GlyphHeight": 16,
+  "GlyphWidth": 16,
+  "GlyphPadding": 0,
+  "Columns": 16,
+  "Rows": 16,
+  "SolidGlyphIndex": 219,
+  "UnsupportedGlyphIndex": 0,
+  "IsSadExtended": false
+}
+```
 
 ---
 

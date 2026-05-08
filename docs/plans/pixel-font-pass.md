@@ -147,21 +147,23 @@ finally
    - `unifont.png`（16×16 字形表，CP437/Latin-1 子集即可）
    - `LICENSE.txt`（GNU Unifont 完整 license 文本）
 
-   **4a · `.font` JSON descriptor 模板**（基于 SadConsole 10.x 现有 IBM 字体格式，M2 第一步 Context7 验证；典型字段如下）：
+   **4a · `.font` JSON descriptor 模板**（Task 4b runtime 修订版，2026-05-08）：
    ```json
    {
+     "$type": "SadConsole.SadFont, SadConsole",
      "Name": "unifont",
      "FilePath": "unifont.png",
      "GlyphHeight": 16,
      "GlyphWidth": 16,
      "GlyphPadding": 0,
      "Columns": 16,
+     "Rows": 16,
      "SolidGlyphIndex": 219,
      "UnsupportedGlyphIndex": 0,
      "IsSadExtended": false
    }
    ```
-   字段名以 Task 2 验证的 10.9 schema 为准（见 `docs/screenshots/font-pass/sadconsole-api-notes.md` Assumption D）。
+   **`$type` 鉴别字段必填**——Newtonsoft.Json 反序列化 `IFont` 接口需要它指向具体类（`SadConsole.SadFont, SadConsole`）。缺它运行时抛 `JsonSerializationException: Could not create an instance of type SadConsole.IFont. Type is an interface or abstract class and cannot be instantiated.`——Task 2 schema 验证靠 XML doc 漏掉了这个 JSON-level 元数据，Task 4b 运行时补上。详见 `docs/screenshots/font-pass/sadconsole-api-notes.md` Assumption D。M3/M6 candidate 字体的 `.font` 文件全部要含 `$type` 字段。
 5. 创建 `assets/fonts/README.md`，含 Unifont 条目。
 6. 修改 `DungeonDescent.csproj` 加 `<Content Include="assets/fonts/**/*.font;assets/fonts/**/*.png" CopyToOutputDirectory="PreserveNewest" />`。
 7. **重写 `Program.cs` 为 Builder 模式**——见 Technical Approach 段的代码块为准：用 `new Builder().SetScreenSize(...).ConfigureFonts((cfg, _) => cfg.UseCustomFont(fontPath)).SetDefaultFontSize(IFont.Sizes.Two).OnStart((_, _) => { ... }).` 然后 `SadGame.Create(startup)`。原有 `try/finally Dispose` 结构保留。
