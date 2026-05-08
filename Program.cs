@@ -2,20 +2,51 @@ using SadConsole;
 using SadConsole.Configuration;
 using SadGame = SadConsole.Game;
 
+// CLI:
+//   dotnet run                                    (uses default unifont placeholder)
+//   dotnet run -- --font <path>                   (overrides font path; useful
+//                                                  for cycling through candidates
+//                                                  in M3 audit without editing
+//                                                  this file)
+//   dotnet run -- --probe-seed <int>              (prints Rooms.Count for
+//                                                  a single Map(seed) call and
+//                                                  exits — for verifying that
+//                                                  a seed is "known-good"
+//                                                  before pinning Game.cs:19)
+string defaultFont = "assets/fonts/unifont/unifont.font";
+string fontPath = defaultFont;
+int? probeSeed = null;
+
+for (int i = 0; i < args.Length; i++)
+{
+    if (args[i] == "--font" && i + 1 < args.Length)
+    {
+        fontPath = args[i + 1];
+        i++;
+    }
+    else if (args[i] == "--probe-seed" && i + 1 < args.Length
+             && int.TryParse(args[i + 1], out int seed))
+    {
+        probeSeed = seed;
+        i++;
+    }
+}
+
+if (probeSeed.HasValue)
+{
+    var probeMap = new DungeonDescent.Map(probeSeed.Value);
+    System.Console.WriteLine($"seed={probeSeed.Value}, Rooms.Count={probeMap.Rooms.Count}");
+    return;
+}
+
 Settings.WindowTitle = "Dungeon Descent";
 
-// Path B2 (per docs/plans/pixel-font-pass.md M2 step 7): load a 16x16
-// pixel font and render it at IFont.Sizes.Two for 32x32 cells, giving a
-// 60x26 grid in a 1920x832 physical window. The font path resolves
-// against AppContext.BaseDirectory so it works under both
-// `dotnet run` (working dir = project root) and a published build.
-var fontPath = Path.Combine(AppContext.BaseDirectory,
-    "assets/fonts/unifont/unifont.font");
+var resolvedFontPath = Path.Combine(AppContext.BaseDirectory, fontPath);
 
 var startup = new Builder()
     .SetWindowSizeInCells(DungeonDescent.Layout.WindowWidth,
                           DungeonDescent.Layout.WindowHeight)
-    .ConfigureFonts((cfg, _) => cfg.UseCustomFont(fontPath))
+    .ConfigureFonts((cfg, _) => cfg.UseCustomFont(resolvedFontPath))
     .SetDefaultFontSize(IFont.Sizes.Two)
     .OnStart((_, _) =>
     {
