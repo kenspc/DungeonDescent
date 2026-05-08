@@ -50,28 +50,50 @@ assets/
 
 ### SadConsole 10.9 字体加载与 32×32 cell 渲染
 
-API 表面**待 M2 第一步用 Context7 验证**（见 R1）。Plan 假设：
+API 表面**已经 Task 2 通过 Context7 + 本地 NuGet XML 文档验证**（详见 `docs/screenshots/font-pass/sadconsole-api-notes.md`）。SadConsole 10.x 走 **Builder 模式**，没有 `Game.Create(int, int, string fontPath, ...)` 重载——这是 plan v1 的 Technical Approach 假设错误，本节已据 Task 2 findings 重写。
+
+**自定义字体加载 + 全局 2× 缩放**（路径 B2 的实际实现）：
 
 ```csharp
-// Program.cs：在 SadGame.Create 之前注册自定义字体
-var fontPath = Path.Combine(AppContext.BaseDirectory, "assets/fonts/<name>/<name>.font");
-SadConsole.Game.Create(
-    Layout.WindowWidth, Layout.WindowHeight,
-    fontPath,                          // ← 自定义字体作为 default font
-    (_, _) => { /* root setup unchanged */ });
+// Program.cs（重写）
+using SadConsole;
+using SadConsole.Configuration;
+using SadGame = SadConsole.Game;
+
+Settings.WindowTitle = "Dungeon Descent";
+
+var fontPath = Path.Combine(AppContext.BaseDirectory,
+    "assets/fonts/<name>/<name>.font");
+
+var startup = new Builder()
+    .SetScreenSize(DungeonDescent.Layout.WindowWidth,
+                   DungeonDescent.Layout.WindowHeight)
+    .ConfigureFonts((cfg, _) => cfg.UseCustomFont(fontPath))
+    .SetDefaultFontSize(IFont.Sizes.Two)        // ← 16×16 源 × 2 = 32×32 cell
+    .OnStart((_, _) =>
+    {
+        var game = new DungeonDescent.Game();
+        var root = new DungeonDescent.RootScreen(game);
+        SadGame.Instance.Screen = root;
+        SadGame.Instance.DestroyDefaultStartingConsole();
+    });
+
+try
+{
+    SadGame.Create(startup);
+    SadGame.Instance.Run();
+}
+finally
+{
+    SadGame.Instance.Dispose();
+}
 ```
 
-```csharp
-// RootScreen.cs：每个 ScreenSurface 显式设 FontSize = (32, 32)
-foreach (var s in _gameSurfaces)
-    s.FontSize = new Point(32, 32);
-```
+物理窗口尺寸：`60 cell × (16×2) = 1920 wide`、`26 cell × (16×2) = 832 tall`。
 
-物理窗口尺寸：`60 × 32 = 1920 wide`、`26 × 32 = 832 tall`。
+**为什么 Builder 模式简化了一切**：`.SetDefaultFontSize(IFont.Sizes.Two)` 设置全局默认字号；任何在 `OnStart` 之后构造的 `ScreenSurface`（含 game surfaces 与所有 overlay）都会在构造瞬间从 `GameHost.DefaultFont` + `DefaultFontSize` 继承——**无需在 `RootScreen.cs` / overlay 类里逐个设 `FontSize`**。这把 plan v1 的 M2 step 8 (per-surface FontSize) 与 M2 step 9 (overlay conditional FontSize) 全部消化掉。
 
-**实现路径与 brief 措辞差异**：brief Hard Part #2 路径 B2 写作 "SadConsole 全局 `SizeMultiple = 2`"。SadConsole 10.9 的等价 API 是按 surface 设 `FontSize`（`Point`）；二者效果等同（16×16 字形按 nearest-neighbor 渲染到 32×32 cell）。本 plan 选 per-surface `FontSize` 是因为 SadConsole 10.x 字体没有 `SizeMultiple` 全局开关——实测以 `IFont.Sizes.Two` 等 enum 或直接 `FontSize` 赋值为准。M2 第一步 Context7 验证若发现存在 `SizeMultiple` 全局开关，可改用全局开关减少代码改动；不影响最终视觉结果。
-
-**Overlay 字体继承**（OQ2 待 M2 验证）：当 default font 改了，新建的 ScreenSurface 是否自动继承？若不继承，M2 需逐 overlay（`InventoryScreen` / `HelpScreen` / `GameOverScreen` / `VictoryScreen`）显式设 `Font` + `FontSize`。
+**Overlay 字体继承（已验证）**：在 `OnStart` 之后构造的 `ScreenSurface(int, int)` 会从 `GameHost.DefaultFont` 继承字体——本 plan 的所有 overlay (`InventoryScreen` / `HelpScreen` / `GameOverScreen` / `VictoryScreen`) 都是用户操作期触发，构造时机晚于 `OnStart`，自动继承。Plan v1 的 OQ2 在此已闭合。
 
 ### License 落地
 
@@ -112,11 +134,12 @@ foreach (var s in _gameSurfaces)
 ### M2 · Pipeline 接入 + 32×32 cell（用 placeholder 字体）
 
 **做什么**：
-1. **API 验证**：用 Context7 MCP 查 `/thraka/sadconsole`（或 SadConsole 10.x 等价 lib id）当前文档，确认：
-   - `SadConsole.Game.Create(int, int, string, ...)` 含 fontPath 重载是否存在
-   - `ScreenSurface.FontSize` 是 `Point` 类型且可直接赋值
-   - 自定义字体加载后子 surface 的字体继承行为
-   - 若任一假设错误，**先修订本 plan 的 Technical Approach 段**再继续。
+1. **API 验证（已完成于 Task 2，2026-05-08）**：findings 见 `docs/screenshots/font-pass/sadconsole-api-notes.md`。要点：
+   - `Game.Create(int, int, string fontPath, ...)` 重载 **不存在** —— 走 `Builder` 模式 + `.ConfigureFonts((cfg, _) => cfg.UseCustomFont(path))`。
+   - `ScreenSurface.FontSize` 是 `Point` 可设——但 plan 现采用全局 `.SetDefaultFontSize(IFont.Sizes.Two)`，**不再需要逐 surface 设**。
+   - 子 surface 在构造时自动继承 `GameHost.DefaultFont` + `DefaultFontSize`——overlay 也自动继承，原 step 9 conditional **已废**。
+   - `.font` schema 字段名：`IsSadExtended`（不是早期 plan template 写错的 `IsSadFontFormat`）。
+   - **本步已闭合**——后续步骤按本节修订后的 Technical Approach 执行即可。
 2. 选 placeholder 字体：**GNU Unifont 16×16**（OFL/GPL dual-licensed，刻意选风格不对的——避免心理上把 placeholder 当真 candidate）。
 3. **生成 Unifont 16×16 PNG 字形表**：从 https://unifoundry.com/unifont/index.html 下载 `unifont-<version>.bdf`（或 `.hex`），用 `bdf2psf` / `bdftopcf` / 自写脚本提取 Basic Latin + Latin-1 + CP437 子集排成 16×16 cell 网格 PNG（恰好 256 字符 = 16 列 × 16 行 → 256×256 px PNG）。或直接用 SadConsole 社区已发布的 Unifont 16×16 改良 PNG（若可找到 OFL 兼容版本，记录来源 URL 到 README）。**接受失败**：若 1 小时内拼装不出可读 PNG，placeholder 改用 SadConsole 内置 `IBM_8x16_NoPadding`（直接复制其 `.font` + `.png` 出来作为 placeholder 资产路径），M2 目的"验证 pipeline"不变。
 4. 创建 `assets/fonts/unifont/` 目录，放置：
@@ -135,16 +158,15 @@ foreach (var s in _gameSurfaces)
      "Columns": 16,
      "SolidGlyphIndex": 219,
      "UnsupportedGlyphIndex": 0,
-     "IsSadFontFormat": true
+     "IsSadExtended": false
    }
    ```
-   字段名以 Context7 查到的 10.9 schema 为准；若字段名变更，按查到的 schema 改本模板。
+   字段名以 Task 2 验证的 10.9 schema 为准（见 `docs/screenshots/font-pass/sadconsole-api-notes.md` Assumption D）。
 5. 创建 `assets/fonts/README.md`，含 Unifont 条目。
 6. 修改 `DungeonDescent.csproj` 加 `<Content Include="assets/fonts/**/*.font;assets/fonts/**/*.png" CopyToOutputDirectory="PreserveNewest" />`。
-7. 修改 `Program.cs` 用 `SadGame.Create` 的 fontPath 重载注册 default font。
-8. 修改 `RootScreen.cs`，在 surface 创建后逐个设 `FontSize = new Point(32, 32)`：
-   - `_titleSurface`, `_mapSurface`, `_statusSurface`, `_logSurface`
-9. 若 OQ2 验证表明 overlay 不继承，修改 `InventoryScreen` / `HelpScreen` / `GameOverScreen` / `VictoryScreen` 同等处理。
+7. **重写 `Program.cs` 为 Builder 模式**——见 Technical Approach 段的代码块为准：用 `new Builder().SetScreenSize(...).ConfigureFonts((cfg, _) => cfg.UseCustomFont(fontPath)).SetDefaultFontSize(IFont.Sizes.Two).OnStart((_, _) => { ... }).` 然后 `SadGame.Create(startup)`。原有 `try/finally Dispose` 结构保留。
+8. **`RootScreen.cs` 不需修改**——子 surface 构造时自动从 `GameHost.DefaultFont` + `DefaultFontSize` 继承字体与字号；不再需要逐 surface 设 `FontSize`。
+9. **Overlay 也不需修改**——同样在 OnStart 之后构造，自动继承。原 plan v1 step 9 (conditional overlay FontSize) **已废**。
 10. `dotnet build && dotnet run`，玩到 floor 2，开 inventory + help overlay。**不要求触发 game-over / victory overlay**——M2 是 placeholder pipeline smoke test，目的是验证字体加载 + 32×32 cell 渲染不崩；game-over / victory 的视觉验证留到 M5 final session（项目无 dev cheat，触发 victory 需打通 floor 5 击败 Dragon，对 placeholder 而言成本不匹配）。
 
 **输入**：M1 完成。  
@@ -261,7 +283,7 @@ Animation remains deferred; this commit does not complete visual polish.
 
 ## Risks and Mitigations
 
-- **R1 · SadConsole 10.9 字体 API 与 plan 假设不一致**：plan 假定 `SadConsole.Game.Create(int, int, string, ...)` 重载存在 + `ScreenSurface.FontSize` 可直接赋 `Point`。Mitigation：M2 第一步显式用 Context7 MCP 查证；若签名不同，先修正 plan Technical Approach 段再执行 M2。这是 plan 内部验证步骤，不是死亡螺旋。
+- **R1 · SadConsole 10.9 字体 API 与 plan 假设不一致**：~~plan 假定 `SadConsole.Game.Create(int, int, string, ...)` 重载存在 + `ScreenSurface.FontSize` 可直接赋 `Point`。Mitigation：M2 第一步显式用 Context7 MCP 查证。~~ **已闭合（Task 2，2026-05-08）**：plan v1 假设的重载不存在，10.x 走 Builder 模式；plan Technical Approach 段已据此重写。Findings 详见 `docs/screenshots/font-pass/sadconsole-api-notes.md`。
 - **R2 · 16×16 source OFL 字体候选稀疏**：M3 可能找不到 5 个达标 candidate。Mitigation：M4 已含 escalation 路径（扩池 8 → C 自制 → B1 源 32×32）。Plan 接受最少 3 candidates 即可推进。Unifont 已在 M2 装妥，是 baseline candidate。
 - **R3 · WSLg HiDPI scaling 让 1920×832 物理窗口实际不是 1920×832**：WSLg 会按 Windows 主机 DPI 拉伸窗口。Mitigation：M2 acceptance 用截图工具像素测量；若 WSLg 拉伸，验证 cell 内部 nearest-neighbor 仍是整数倍即可，物理像素值放宽。Windows 主机直接跑（非 WSLg）应该无此问题——若怀疑 WSLg 异常先在 Windows 验证。
 - **R4 · 32×32 + status 行 60 列文字溢出**：当前 status 行最坏情况已经接近 60 列；新字体若个别字符更宽（虽源 16×16 应严格 monospace），SadConsole 会 silently truncate（`SadConsoleRenderer.cs:142-145` 注释提到这一点）。Mitigation：M2 acceptance 显式逐字段检查 status 行可见，全部 candidate 都过 M4 status 数字 checklist。
@@ -270,8 +292,8 @@ Animation remains deferred; this commit does not complete visual polish.
 
 ## Open Questions
 
-- **OQ1 · SadConsole 10.9 是否支持 `Game.Create` 的 fontPath 重载**：M2 第一步用 Context7 查证。若不支持，备选：在 lambda 内用 `SadConsole.Game.Instance.LoadFont(...)` 然后挂到 `Game.Instance.DefaultFont`。Plan Technical Approach 段需相应更新。
-- **OQ2 · ScreenSurface 与 Overlay 的字体继承**：当 default font 改了，新建的 surface（含 overlay）是否自动继承？若不继承，M2 需逐 overlay 显式设 `Font` + `FontSize`，M2 步骤 8 已预留这条分支。
+- **OQ1 · ~~SadConsole 10.9 是否支持 `Game.Create` 的 fontPath 重载~~** ✅ **闭合（Task 2，2026-05-08）**：不支持。10.x 走 Builder 模式 + `.ConfigureFonts((cfg, _) => cfg.UseCustomFont(path))`。Plan Technical Approach 段已重写。
+- **OQ2 · ~~ScreenSurface 与 Overlay 的字体继承~~** ✅ **闭合（Task 2，2026-05-08）**：构造时自动从 `GameHost.DefaultFont` + `DefaultFontSize` 继承。OnStart 后构造的所有 surface（含 overlay）自动继承。M2 step 8/9 conditional 已废。
 - **OQ3 · 字体短名单的最终来源池**：M3 起点已列（int10h / Unifont / MxPlus），但若用户对某个 candidate 有先验偏好（"我想试试 Cherry"），plan 不阻止增加。
 - **OQ4 · License 允许列表是否扩展**：brief 列 OFL/MIT/BSD/ISC；若 M3 出现 CC BY-SA 4.0 候选（int10h 多数），是否扩列表——M3 阶段决策。
 

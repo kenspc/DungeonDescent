@@ -38,11 +38,17 @@ In the current `git HEAD` state (palette-brogue-pass landed, default 8×16 font)
 
 ### Task 2: Verify SadConsole 10.9 font API via Context7
 
-**Status:** TODO
+**Status:** DONE
+
+**Completed:** 2026-05-08. Verified via Context7 (`/thraka/sadconsole`, sparse) + local NuGet XML doc (`~/.nuget/packages/sadconsole/10.9.0/lib/net8.0/SadConsole.xml`, authoritative). Findings:
+- Assumption A: **REFUTED** — no `Game.Create(int, int, string fontPath, ...)` overload exists. 10.x uses Builder pattern + `.ConfigureFonts((cfg, _) => cfg.UseCustomFont(path))`.
+- Assumption B: **CONFIRMED** — `ScreenSurface.FontSize` is `Point` settable, but plan's per-surface assignment is now redundant (see C).
+- Assumption C: **CONFIRMED** — child surfaces inherit `GameHost.DefaultFont` + `DefaultFontSize` at construction. Combined with Builder's `.SetDefaultFontSize(IFont.Sizes.Two)`, all game surfaces and overlays inherit 32×32 cell automatically. **Task 5 becomes obsolete.**
+- Assumption D: **PARTIALLY REFUTED** — `.font` schema field is `IsSadExtended`, not `IsSadFontFormat` (plan template error fixed).
+
+Plan updates landed in Technical Approach + M2 steps 1/4a/7/8/9, R1, OQ1, OQ2. See `docs/screenshots/font-pass/sadconsole-api-notes.md` for full evidence.
 
 **Depends on:** Task 1
-
-Use the Context7 MCP server (`/thraka/sadconsole` or the equivalent SadConsole 10.x library id) to confirm three plan assumptions before any code change. Write findings to a notes file. If any assumption is refuted, update the plan's Technical Approach section before proceeding to Task 3.
 
 **Files to create:**
 - `docs/screenshots/font-pass/sadconsole-api-notes.md`
@@ -80,18 +86,21 @@ Source the GNU Unifont 16×16 glyph data, build a 256×256 px PNG glyph table (1
 
 ---
 
-### Task 4: Wire font + 32×32 cell rendering on 4 game surfaces (M2 steps 6-8, 10)
+### Task 4: Rewrite Program.cs to Builder pattern + load placeholder font (M2 steps 6, 7, 10)
 
 **Status:** TODO
 
 **Depends on:** Task 3
 
-Add the assets/fonts content include to the csproj, switch `Program.cs` to use the `Game.Create` fontPath overload (loading the placeholder font), and modify `RootScreen.cs` so each of the 4 game surfaces (`_titleSurface`, `_mapSurface`, `_statusSurface`, `_logSurface`) renders at 32×32 cell. Run the game to confirm end-to-end correctness — 4 surfaces render, status text fits, game plays through floor 2 without crashing.
+Add the assets/fonts content include to the csproj, then **rewrite `Program.cs` to use SadConsole 10.x Builder pattern** with `.ConfigureFonts((cfg, _) => cfg.UseCustomFont(...))` to load the placeholder font and `.SetDefaultFontSize(IFont.Sizes.Two)` to upscale to 32×32 cells globally. The existing `try/finally Dispose` structure is preserved. **No `RootScreen.cs` modification is needed** — surfaces inherit font + size at construction. Run the game to confirm end-to-end correctness — game plays through floor 2 without crashing, overlays open without crashing, status text fits.
 
 **Files to create or modify:**
 - `DungeonDescent.csproj` (add `<Content Include="assets/fonts/**/*.font;assets/fonts/**/*.png" CopyToOutputDirectory="PreserveNewest" />` ItemGroup)
-- `Program.cs` (replace the existing `SadGame.Create(width, height, lambda)` call with the fontPath-accepting overload, pointing at `assets/fonts/unifont/unifont.font`)
-- `src/UI/RootScreen.cs` (set `FontSize = new Point(32, 32)` on each of the 4 game surfaces after construction; the `_gameSurfaces` foreach pattern already in place is the natural insertion point)
+- `Program.cs` (rewrite to Builder pattern — see plan Technical Approach for the canonical code block; key elements: `new Builder().SetScreenSize(...).ConfigureFonts((cfg, _) => cfg.UseCustomFont(fontPath)).SetDefaultFontSize(IFont.Sizes.Two).OnStart((_, _) => { ... })` then `SadGame.Create(startup)`)
+
+**Files NOT to modify (deliberately):**
+- `src/UI/RootScreen.cs` — surface construction unchanged; font + size inherit from `GameHost.DefaultFont` set by Builder.
+- `src/UI/InventoryScreen.cs`, `src/UI/HelpScreen.cs`, `src/UI/GameOverScreen.cs`, `src/UI/VictoryScreen.cs` — same reason, all overlays inherit at construction time.
 
 **Acceptance criteria:**
 - `dotnet build` succeeds without warnings introduced by the font work
@@ -99,31 +108,22 @@ Add the assets/fonts content include to the csproj, switch `Program.cs` to use t
 - All 4 game surfaces (title / map / status / log) render at the same 32×32 cell size with no visible cell-size mismatch between adjacent surfaces
 - Status row content `HP:NN/NN ATK:NN DEF:NN LV:N EXP:NN/NN G:NNN Sc:NNNN` is fully visible (none of the trailing fields are silently truncated by SadConsole's Print)
 - Game can be played from floor 1 to floor 2 (move, fight, pick item, descend stairs) without crashing
-- During the playthrough, `i` opens the inventory overlay and `?` opens the help overlay without crashing — this is the runtime check for plan M2 step 10's overlay smoke test, and is the empirical evidence used by Task 5 to decide skip-vs-execute when Task 2's finding C is ambiguous. (Visual cell-size verification on overlays remains Task 5's responsibility.)
+- During the playthrough, `i` opens the inventory overlay and `?` opens the help overlay without crashing **and both overlays render at 32×32 cell** (no smaller-cell regression — confirms the inheritance pathway works for overlay surfaces, replacing the old Task 5 conditional)
 - `git status` is clean before commit; commit message contains "step 2 of 3" and "M2: pipeline only, placeholder font"
 
 ---
 
-### Task 5: (Conditional) Wire FontSize on 4 overlays if inheritance fails (M2 step 9)
+### Task 5: (Obsoleted) Wire FontSize on 4 overlays if inheritance fails (M2 step 9)
 
-**Status:** TODO
+**Status:** SKIPPED
 
-**Depends on:** Task 4
+**Skip rationale (2026-05-08, post Task 2):** Task 2 confirmed Assumption C — overlays inherit `GameHost.DefaultFont` + `DefaultFontSize` at construction. With Task 4 setting `.SetDefaultFontSize(IFont.Sizes.Two)` in the Builder before `OnStart`, the 4 overlays (`InventoryScreen` / `HelpScreen` / `GameOverScreen` / `VictoryScreen`) inherit 32×32 cell automatically when constructed during user interaction. No code modification needed. The corresponding plan M2 step 9 has been marked obsolete in the same revision.
 
-**Conditional execution:** If Task 2's notes file recorded that child `ScreenSurface` instances **automatically inherit** the new default font, this task is skipped — mark Status: SKIPPED with a one-line note pointing at the relevant Task 2 finding. If Task 2's notes recorded that they **do not inherit**, execute the task body below.
+**Verification of skip**: Task 4's acceptance includes "both overlays render at 32×32 cell" as runtime confirmation that inheritance works as Task 2 predicted. If that acceptance fails, this task may be re-opened (revert Status to TODO) to apply the explicit per-overlay `FontSize` writes that the original conditional path described.
 
-If executed: each of the 4 overlay classes (`InventoryScreen`, `HelpScreen`, `GameOverScreen`, `VictoryScreen`) currently extends `ScreenSurface` with a `: base(Layout.WindowWidth, Layout.WindowHeight)` constructor call. Add `FontSize = new Point(32, 32)` immediately after the `: base(...)` body in each overlay's constructor.
+**Files modified:** none.
 
-**Files to modify (only if executed):**
-- `src/UI/InventoryScreen.cs`
-- `src/UI/HelpScreen.cs`
-- `src/UI/GameOverScreen.cs`
-- `src/UI/VictoryScreen.cs`
-
-**Acceptance criteria:**
-- If skipped: `Status: SKIPPED` is written into this task's body in the task document with a one-line note referencing the Task 2 finding that justified the skip
-- If executed: each of the 4 overlays, when opened during a play session at the 32×32-cell game window, renders at 32×32 cell with no visible cell-size mismatch against the underlying game surfaces
-- If executed: opening overlay → closing overlay round-trip preserves the 32×32 cell size on the underlying game surfaces (no regression to the default font size after overlay close)
+**Depends on:** Task 4 (verification gate, not implementation gate).
 
 ---
 
