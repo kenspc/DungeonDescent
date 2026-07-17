@@ -5,7 +5,9 @@
 A turn-based ASCII-style roguelike dungeon crawler built with .NET 8,
 [SadConsole 10.x](https://sadconsole.com/) and MonoGame DesktopGL. The
 game opens a GUI window and renders text glyphs through SadConsole's
-tile engine — no terminal escape sequences are involved.
+tile engine — no terminal escape sequences are involved. Glyphs come
+from the Px437 "FM Towns re." pixel font (16×16, doubled to 32×32 px
+per cell), colored by a 20-slot semantic palette sampled from Brogue.
 
 ```
  Dungeon Descent - Floor 3/5
@@ -54,6 +56,20 @@ dotnet build
 dotnet run --no-build
 ```
 
+### Command-line options
+
+Flags go after `--` so `dotnet run` passes them to the game:
+
+```bash
+dotnet run -- --font <path>       # use another SadConsole .font descriptor
+                                  # (relative paths resolve against the
+                                  # build output directory)
+dotnet run -- --probe-seed <int>  # print the room count for Map(seed) and
+                                  # exit — headless map-audit utility,
+                                  # no window opens
+dotnet run -- --help              # show usage
+```
+
 ## How to Play
 
 ### Objective
@@ -88,23 +104,28 @@ The game is **turn-based**: every time you move, all monsters take one step.
 
 | Symbol | Meaning |
 |--------|---------|
-| `@` | You (yellow) |
+| `@` | You (white) |
 | `#` | Wall |
 | `.` | Floor |
+| `,` / `'` | Mossy / cracked floor (decorative variants — walkable, purely visual) |
 | `>` | Stairs down (cyan) |
 | `<` | Stairs up (cyan) |
-| `r` | Rat (gray) |
+| `r` | Rat (tan) |
 | `g` | Goblin (green) |
-| `T` | Troll (dark red) |
-| `D` | Dragon — Boss (red) |
-| `!` | Health Potion (magenta) |
-| `+` | Iron Sword (cyan) |
+| `T` | Troll (green) |
+| `D` | Dragon — Boss (purple) |
+| `!` | Health Potion (pink) |
+| `+` | Iron Sword (blue) |
 | `[` | Leather Armor (blue) |
 | `$` | Gold (yellow) |
 
+Colors mark semantic families rather than individuals, Brogue-style —
+Goblin and Troll share the humanoid green, Sword and Armor share the
+equipment blue. The glyph is what tells them apart.
+
 ### Fog of War
 
-Only explored tiles are shown. Tiles in your current field of view (radius 8, diamond shape) are shown bright. Previously explored but currently out-of-sight tiles are shown dim.
+Only explored tiles are shown. Tiles in your current field of view (radius 8, diamond shape) are shown bright. Previously explored but currently out-of-sight tiles are shown dim, and the decorative `,` / `'` floor variants collapse back to plain `.` so remembered areas stay visually quiet.
 
 ## Game Systems
 
@@ -170,25 +191,29 @@ Each floor is **procedurally generated** with random rooms and corridors.
 - **Stock potions** before Floor 5. The Dragon deals 13 damage per hit at minimum.
 - **Swords stack** — equipping multiple swords keeps adding +3 ATK each time.
 - **You can go back up** if you're low on health; floors respawn fresh enemies and items.
-- Watch your HP color: it turns **red** when below 1/3 of max.
+- Watch your HP color: it shifts from green to a sickly **yellow-green** when below 1/3 of max.
 
 ## Project Structure
 
 ```
 DungeonDescent/
-├── Program.cs                 # Entry point; boots SadConsole + RootScreen
-├── DungeonDescent.csproj      # .NET 8 project file (refs SadConsole + MonoGame)
+├── Program.cs                 # Entry point; CLI flags, font loading, boots SadConsole + RootScreen
+├── DungeonDescent.csproj      # .NET 8 project file (refs SadConsole + MonoGame, copies font assets)
+├── assets/
+│   └── fonts/
+│       └── px437-fmtowns-re/  # Px437 "FM Towns re." pixel font (PNG glyph table + .font JSON + license)
 ├── docs/                      # Design and implementation documents
 └── src/
     ├── Core/
     │   ├── Point.cs           # 2D coordinate value type (record struct)
     │   ├── Direction.cs       # Cardinal direction constants (Up/Down/Left/Right)
-    │   └── Palette.cs         # 9-color foreground palette (SadRogue.Primitives.Color)
+    │   ├── Layout.cs          # Fixed 60×26 window grid: title/map/status/log rows
+    │   └── Palette.cs         # 20-slot semantic color palette + Dim() helper (SadRogue.Primitives.Color)
     ├── Map/
-    │   ├── TileType.cs        # Tile type enum (Wall, Floor, StairsDown, StairsUp)
+    │   ├── TileType.cs        # Tile type enum (Wall, Floor, FloorMossy, FloorCracked, StairsDown, StairsUp)
     │   ├── Tile.cs            # Tile state (type, explored, visible)
     │   ├── Room.cs            # Room data with overlap/contains helpers
-    │   └── Map.cs             # Dungeon generation, BFS pathfinding, FOV
+    │   └── Map.cs             # Dungeon generation, BFS pathfinding, FOV, floor-variant scatter
     ├── Entities/
     │   ├── Entity.cs          # Abstract base: position, stats, TakeDamage()
     │   ├── Player.cs          # Player: leveling, inventory, EXP system
@@ -201,6 +226,7 @@ DungeonDescent/
     │   ├── MessageLog.cs           # Scrolling 3-line message queue
     │   ├── SadConsoleRenderer.cs   # Stateless drawing into IScreenSurface
     │   ├── SadConsoleKeyAdapter.cs # AsciiKey -> ConsoleKeyInfo bridge
+    │   ├── OverlayInput.cs         # "Any key" helpers that ignore pure modifier presses
     │   ├── RootScreen.cs           # Top-level ScreenObject + 4 sub-surfaces
     │   ├── InventoryScreen.cs      # Inventory overlay
     │   ├── HelpScreen.cs           # Help overlay
@@ -237,4 +263,6 @@ Program.cs ──▶ SadConsole.Game ──▶ RootScreen ──▶ Game.cs ─�
 - **Map generation:** Random room placement with overlap rejection (60 attempts per floor), rooms connected with L-shaped corridors via horizontal-then-vertical carving.
 - **Pathfinding:** BFS on walkable tiles, returns the first step toward the target. Runs per-monster per-turn; acceptable for maps of 60×20.
 - **FOV:** Manhattan-distance diamond with radius 8. All tiles within range are marked visible and explored.
-- **Randomness:** Each floor uses a fresh `Random` seed so maps are non-repeatable across sessions.
+- **Floor variants:** after carving, ~5% of room floor tiles (~1% in corridors) become decorative mossy `,` / cracked `'` tiles. Purely visual — walkability and FOV treat them as plain floor.
+- **Font:** Px437 "FM Towns re." (a recreation of the Fujitsu FM Towns BIOS font by [int10h.org](https://int10h.org/oldschool-pc-fonts/), CC BY-SA 4.0), stored as a 16×16 PNG glyph table + SadConsole `.font` descriptor and rendered at 32×32 px per cell. See `assets/fonts/README.md` for provenance, license notes, and regeneration steps.
+- **Randomness:** Each floor uses a fresh `Random` seed so maps are non-repeatable across sessions. A deterministic `Map(seed)` constructor backs the `--probe-seed` audit flag.

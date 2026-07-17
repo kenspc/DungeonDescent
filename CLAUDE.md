@@ -5,10 +5,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-dotnet build          # compile
-dotnet run            # build + run (opens a GUI window)
-dotnet run --no-build # run without rebuilding
-dotnet watch run      # rebuild + restart on file save (for development)
+dotnet build                    # compile
+dotnet run                      # build + run (opens a GUI window)
+dotnet run --no-build           # run without rebuilding
+dotnet watch run                # rebuild + restart on file save (for development)
+dotnet run -- --font <path>     # override the pixel font (.font descriptor)
+dotnet run -- --probe-seed <n>  # print Rooms.Count for Map(n) and exit (headless)
+dotnet run -- --help            # CLI usage
 ```
 
 No test project exists. Verification is done by building and running manually.
@@ -16,7 +19,9 @@ No test project exists. Verification is done by building and running manually.
 **Runtime requirement:** the game opens a GUI window via SadConsole + MonoGame
 DesktopGL (SDL2). It needs a display server: Windows native, WSL2 with WSLg
 (Windows 11), or Linux/macOS with an active display. There is no longer a
-text-mode fallback or terminal-size check.
+text-mode fallback or terminal-size check. The one headless path is
+`dotnet run -- --probe-seed <n>`, which prints map stats and exits before
+any window is created.
 
 ## Architecture
 
@@ -41,10 +46,11 @@ Program.cs → SadConsole.Game.Create / Run (MonoGame loop)
 ### Key design decisions
 
 - **`Game.cs`** is the central authority: holds `Map`, `Player`, `List<Monster>`, `List<Item>`, `Floor`, and `Status`. All turn logic lives here. `EndPlayerTurn()` is `public` so input handlers can call it after inventory use.
-- **`SadConsoleRenderer.cs`** is purely presentational — it reads game state and writes to a `IScreenSurface`, never mutates. The renderer exposes `RenderTitle / RenderMap / RenderStatus / RenderLog` plus `DrawInventory / DrawHelp / DrawGameOver / DrawVictory` for overlays. `Palette.cs` (in `src/Core/`) holds the 9-color foreground palette used everywhere.
+- **`SadConsoleRenderer.cs`** is purely presentational — it reads game state and writes to a `IScreenSurface`, never mutates. The renderer exposes `RenderTitle / RenderMap / RenderStatus / RenderLog` plus `DrawInventory / DrawHelp / DrawGameOver / DrawVictory` for overlays. `Palette.cs` (in `src/Core/`) holds the 20-slot semantic palette (Wall/Floor/Entity/Item/Effect/Ui groups, sampled from Brogue 1.7.5) plus the `Dim()` helper used for remembered tiles.
 - **`RootScreen.cs`** owns the four child surfaces (title 60×1, map 60×20, status 60×2, log 60×3) and the keyboard. `OpenOverlay` / `CloseOverlay` swap to a full-window 60×26 overlay (`InventoryScreen`, `HelpScreen`, `GameOverScreen`, `VictoryScreen`).
+- **Font:** `Program.cs` loads `assets/fonts/px437-fmtowns-re/px437-fmtowns-re.font` (16×16 PNG glyph table; the `.font` JSON must keep its Newtonsoft `$type` discriminator) via `Builder.ConfigureFonts`, doubled by `SetDefaultFontSize(IFont.Sizes.Two)` to 32×32 px cells. All surfaces, overlays included, inherit `GameHost.DefaultFont`; the `--font` CLI flag overrides the path. The csproj `Content` glob copies font assets to the build output.
 - **`Item`** on the map is always a `PositionedItem` (subclass of `Item` with a `Position` field). `Game.ItemAt(Point)` uses `OfType<PositionedItem>()` to find items. Inventory items are plain `Item` instances.
-- **`Map`** generates rooms procedurally per floor using random placement + overlap rejection, connects them with L-shaped corridors, and places `StairsDown` at the last room's center. `NextFloor()` calls `PlaceUpStairs()` on the new map; `PrevFloor()` also calls `PlaceUpStairs()` so the player can keep ascending.
+- **`Map`** generates rooms procedurally per floor using random placement + overlap rejection, connects them with L-shaped corridors, and places `StairsDown` at the last room's center. `NextFloor()` calls `PlaceUpStairs()` on the new map; `PrevFloor()` also calls `PlaceUpStairs()` so the player can keep ascending. `ScatterFloorVariants()` converts ~5% of room floor (~1% of corridor floor) to decorative `FloorMossy`/`FloorCracked` — render-only, same walkability/FOV as `Floor`.
 - **Monster AI:** each monster calls `Map.BfsNextStep()` toward the player every turn. Troll has `MoveInterval = 2` (moves every other turn).
 - **FOV:** Manhattan-distance diamond, radius 8. `Map.UpdateFov()` is called after every player move.
 
